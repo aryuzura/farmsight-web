@@ -11,6 +11,187 @@ import {
 } from 'recharts';
 import { fetchApi } from '../api';
 
+
+const BusinessHealthGauge = ({ score }) => {
+  const validScore =
+    typeof score === 'number' &&
+    Number.isFinite(score) &&
+    score >= 0 &&
+    score <= 100;
+
+  // Setengah lingkaran dari kiri ke kanan.
+  const cx = 120;
+  const cy = 110;
+  const radius = 78;
+
+  const polarToCartesian = (angle) => {
+    const radians = (angle * Math.PI) / 180;
+
+    return {
+      x: cx + radius * Math.cos(radians),
+      y: cy - radius * Math.sin(radians),
+    };
+  };
+
+  const describeArc = (startAngle, endAngle) => {
+    const start = polarToCartesian(startAngle);
+    const end = polarToCartesian(endAngle);
+    const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+
+    return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y}`;
+  };
+
+  // Jarum bergerak dari 180° (0) sampai 0° (100).
+  const needleAngle = validScore ? 180 - (score / 100) * 180 : 90;
+  const needleLength = 58;
+
+  const needleX =
+    cx + needleLength * Math.cos((needleAngle * Math.PI) / 180);
+  const needleY =
+    cy - needleLength * Math.sin((needleAngle * Math.PI) / 180);
+
+  return (
+    <div className="mx-auto mt-4 w-full max-w-xs">
+      <svg
+        viewBox="0 0 240 168"
+        role="img"
+        aria-label={
+          validScore
+            ? `Business Health Score ${score} dari 100`
+            : 'Business Health Score belum tersedia'
+        }
+        className="h-auto w-full overflow-visible"
+      >
+        {/* Jalur abu-abu ketika skor belum tersedia */}
+        {!validScore && (
+          <path
+            d={describeArc(180, 0)}
+            fill="none"
+            stroke="rgba(255,255,255,0.25)"
+            strokeWidth="14"
+            strokeLinecap="round"
+          />
+        )}
+
+        {/* Meteran merah, kuning, dan hijau */}
+        {validScore && (
+          <>
+            <path
+              d={describeArc(180, 120)}
+              fill="none"
+              stroke="#f87171"
+              strokeWidth="14"
+              strokeLinecap="round"
+            />
+            <path
+              d={describeArc(120, 60)}
+              fill="none"
+              stroke="#fbbf24"
+              strokeWidth="14"
+              strokeLinecap="round"
+            />
+            <path
+              d={describeArc(60, 0)}
+              fill="none"
+              stroke="#4ade80"
+              strokeWidth="14"
+              strokeLinecap="round"
+            />
+          </>
+        )}
+
+        {/* Skala */}
+        {[0, 20, 40, 60, 80, 100].map((value) => {
+          const angle = 180 - (value / 100) * 180;
+          const outer = polarToCartesian(angle);
+          const inner = {
+            x: cx + 68 * Math.cos((angle * Math.PI) / 180),
+            y: cy - 68 * Math.sin((angle * Math.PI) / 180),
+          };
+          const label = {
+            x: cx + 98 * Math.cos((angle * Math.PI) / 180),
+            y: cy - 98 * Math.sin((angle * Math.PI) / 180),
+          };
+
+          return (
+            <g key={value}>
+              <line
+                x1={inner.x}
+                y1={inner.y}
+                x2={outer.x}
+                y2={outer.y}
+                stroke="white"
+                strokeWidth="2"
+                opacity={validScore ? 0.9 : 0.4}
+              />
+              <text
+                x={label.x}
+                y={label.y}
+                fill="white"
+                fontSize="10"
+                textAnchor="middle"
+                dominantBaseline="middle"
+                opacity={0.85}
+              >
+                {value}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Jarum */}
+        {validScore && (
+          <line
+            x1={cx}
+            y1={cy}
+            x2={needleX}
+            y2={needleY}
+            stroke="white"
+            strokeWidth="4"
+            strokeLinecap="round"
+          />
+        )}
+
+        {/* Poros jarum */}
+        <circle
+          cx={cx}
+          cy={cy}
+          r="7"
+          fill="white"
+          stroke="#0f766e"
+          strokeWidth="3"
+        />
+
+        {/* Nilai tengah */}
+        <text
+          x={cx}
+          y="142"
+          fill="white"
+          fontSize="25"
+          fontWeight="700"
+          textAnchor="middle"
+        >
+          {validScore
+            ? Number(score).toLocaleString('id-ID', {
+                maximumFractionDigits: 1,
+              })
+            : '—'}
+        </text>
+
+        <text
+          x={cx}
+          y="160"
+          fill="rgba(255,255,255,0.8)"
+          fontSize="11"
+          textAnchor="middle"
+        >
+          {validScore ? 'DARI 100' : 'SKOR BELUM TERSEDIA'}
+        </text>
+      </svg>
+    </div>
+  );
+};
+
 const Dashboard = () => {
   const [forecastData, setForecastData] = useState([]);
   const [inventoryData, setInventoryData] = useState([]);
@@ -582,9 +763,14 @@ const Dashboard = () => {
             </p>
 
             {(() => {
-              const score = normalizeNumber(
+              const rawScore = normalizeNumber(
                 dashboardKpi?.skor_kesehatan_bisnis
               );
+
+              const score =
+                rawScore !== null && rawScore >= 0 && rawScore <= 100
+                  ? rawScore
+                  : null;
 
               const label = dashboardKpi?.label_kesehatan_bisnis;
               const komponen =
@@ -592,20 +778,18 @@ const Dashboard = () => {
 
               return (
                 <>
-                  <div className="mt-5 flex items-end gap-2">
-                    <span className="text-5xl font-bold">
-                      {score === null ? '—' : formatNumber(score, 1)}
+                  {/* Diagram meteran */}
+                  <BusinessHealthGauge score={score} />
+
+                  <div className="mt-3 text-center">
+                    <span className="inline-flex rounded-full bg-white/15 px-3 py-1.5 text-sm">
+                      {score === null
+                        ? 'Belum dapat dihitung'
+                        : label || 'Skor tersedia'}
                     </span>
-                    <span className="pb-1 text-sm text-teal-100">/ 100</span>
                   </div>
 
-                  <span className="mt-4 inline-flex rounded-full bg-white/15 px-3 py-1.5 text-sm">
-                    {score === null
-                      ? 'Belum dapat dihitung'
-                      : label || 'Skor tersedia'}
-                  </span>
-
-                  <p className="mt-4 text-sm leading-6 text-teal-50">
+                  <p className="mt-4 text-center text-sm leading-6 text-teal-50">
                     {score === null
                       ? 'Skor belum tersedia dari backend. Diperlukan rumus penilaian yang transparan dan indikator aktual yang valid.'
                       : 'Skor dihitung oleh backend berdasarkan indikator bisnis yang tersedia. Periksa komponen penilaian untuk memahami hasilnya.'}
