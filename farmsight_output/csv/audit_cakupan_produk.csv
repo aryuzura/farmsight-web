@@ -1,0 +1,39 @@
+kode_produk,jumlah_minggu,minggu_dengan_demand,minggu_demand_positif,total_demand,minggu_train,minggu_test,nilai_y_model_valid,nama_produk,status_produk,pola_demand,tier_model,model_terbaik,keandalan,catatan_keandalan,ada_di_model_terbaik,ada_di_safety_stock_rop
+BLB,144,121,9,50.0,119,25,121,BIBIT LIDAH BUAYA,tidak_aktif_terbaru,intermittent,tidak_aktif,,tidak_aktif,Produk tidak aktif: tidak diprediksi.,False,False
+BMG,144,101,5,34.0,119,25,101,BAWANG MERAH GORENG,aktif,data_tidak_cukup,heuristik,,heuristik,Tanpa model: rata-rata & std demand mentah.,False,True
+BSY,144,121,9,55.0,119,25,121,BIBIT SAYURAN,tidak_aktif_terbaru,intermittent,tidak_aktif,,tidak_aktif,Produk tidak aktif: tidak diprediksi.,False,False
+BYM,144,124,31,237.0,119,25,124,BAYAM,tidak_aktif_terbaru,intermittent,tidak_aktif,,tidak_aktif,Produk tidak aktif: tidak diprediksi.,False,False
+CKP,144,99,10,251.0,119,25,99,COKLAT PERMEN,aktif,lumpy,ringan,croston_sba,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.,True,True
+CRG,144,100,4,38.0,119,25,100,CIRENG,aktif,data_tidak_cukup,heuristik,,heuristik,Tanpa model: rata-rata & std demand mentah.,False,True
+GRG,144,100,4,57.0,119,25,100,GORENGAN,aktif,data_tidak_cukup,heuristik,,heuristik,Tanpa model: rata-rata & std demand mentah.,False,True
+HSP,144,123,31,464.0,119,25,123,HASIL PANEN,tidak_aktif_terbaru,lumpy,tidak_aktif,,tidak_aktif,Produk tidak aktif: tidak diprediksi.,False,False
+JGG,144,121,9,73.0,119,25,121,JAGUNG,tidak_aktif_terbaru,lumpy,tidak_aktif,,tidak_aktif,Produk tidak aktif: tidak diprediksi.,False,False
+JHE,144,104,7,67.0,119,25,104,JAHE,aktif,intermittent,heuristik,,heuristik,Tanpa model: rata-rata & std demand mentah.,False,True
+KCT,144,100,4,24.0,119,25,100,KACANG TELOR,aktif,data_tidak_cukup,heuristik,,heuristik,Tanpa model: rata-rata & std demand mentah.,False,True
+KJG,144,100,4,27.0,119,25,100,KERIPIK JAGUNG GEPREK,aktif,data_tidak_cukup,heuristik,,heuristik,Tanpa model: rata-rata & std demand mentah.,False,True
+KKG,144,124,40,838.0,119,25,124,KANGKUNG,aktif,lumpy,penuh,arima,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.,True,True
+KMG,144,100,5,31.0,119,25,100,KEMANGI,aktif,lumpy,heuristik,,heuristik,Tanpa model: rata-rata & std demand mentah.,False,True
+KNK,144,81,2,6.0,119,25,81,KENIKIR,tidak_aktif_terbaru,intermittent,tidak_aktif,,tidak_aktif,Produk tidak aktif: tidak diprediksi.,False,False
+KRB,144,123,7,63.0,119,25,123,KERIPIK BAWANG,tidak_aktif_terbaru,intermittent,tidak_aktif,,tidak_aktif,Produk tidak aktif: tidak diprediksi.,False,False
+KRL,144,101,5,30.0,119,25,101,KERIPIK LABU,aktif,data_tidak_cukup,heuristik,,heuristik,Tanpa model: rata-rata & std demand mentah.,False,True
+KRY,144,99,8,50.0,119,25,99,KERIPIK BAYAM,aktif,intermittent,heuristik,,heuristik,Tanpa model: rata-rata & std demand mentah.,False,True
+LBP,144,103,7,63.0,119,25,103,LABU PRIDA,aktif,lumpy,ringan,arima,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.,True,True
+LDB,144,120,19,114.0,119,25,120,LIDAH BUAYA,aktif,intermittent,penuh,arima,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.,True,True
+MDT,144,123,49,407.0,119,25,123,MEDIA TANAM,aktif,lumpy,penuh,arima,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.,True,True
+MLB,144,124,17,273.0,119,25,124,MINUMAN LIDAH BUAYA,aktif,intermittent,penuh,croston_sba,rendah,TIDAK mengalahkan tebakan naive (MASE>=1) -> jangan dijadikan acuan utama; gunakan sebagai indikasi saja.,True,True
+MNJ,144,100,4,33.0,119,25,100,MINUMAN JERUK,aktif,data_tidak_cukup,heuristik,,heuristik,Tanpa model: rata-rata & std demand mentah.,False,True
+MNM,144,104,6,55.0,119,25,104,MINUMAN,aktif,lumpy,heuristik,,heuristik,Tanpa model: rata-rata & std demand mentah.,False,True
+MNT,144,100,4,31.0,119,25,100,MINUMAN TIMUN,aktif,data_tidak_cukup,heuristik,,heuristik,Tanpa model: rata-rata & std demand mentah.,False,True
+PKC,144,77,1,4.0,119,25,77,PAKCOY,tidak_aktif_terbaru,data_tidak_cukup,tidak_aktif,,tidak_aktif,Produk tidak aktif: tidak diprediksi.,False,False
+PLB,144,124,24,499.0,119,25,124,PERMEN LIDAH BUAYA,tidak_aktif_terbaru,lumpy,tidak_aktif,,tidak_aktif,Produk tidak aktif: tidak diprediksi.,False,False
+PMJ,144,102,8,47.0,119,25,102,PERMEN JELLY,aktif,intermittent,ringan,arima,rendah,TIDAK mengalahkan tebakan naive (MASE>=1) -> jangan dijadikan acuan utama; gunakan sebagai indikasi saja.,True,True
+PNP,144,60,1,2.0,119,25,60,PUPUK NPK,tidak_aktif_terbaru,data_tidak_cukup,tidak_aktif,,tidak_aktif,Produk tidak aktif: tidak diprediksi.,False,False
+PPK,144,103,17,83.0,119,25,103,PUPUK,aktif,intermittent,ringan,arima,rendah,TIDAK mengalahkan tebakan naive (MASE>=1) -> jangan dijadikan acuan utama; gunakan sebagai indikasi saja.,True,True
+PSK,144,123,22,282.0,119,25,123,PISANG KEPOK,aktif,intermittent,penuh,arima,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.,True,True
+PYB,144,54,1,4.0,119,25,54,PEYEK BAYAM,tidak_aktif_terbaru,data_tidak_cukup,tidak_aktif,,tidak_aktif,Produk tidak aktif: tidak diprediksi.,False,False
+RJK,144,100,4,53.0,119,25,100,RUJAK KANGKUNG,aktif,data_tidak_cukup,heuristik,,heuristik,Tanpa model: rata-rata & std demand mentah.,False,True
+SAW,144,124,25,183.0,119,25,124,SAWI,tidak_aktif_terbaru,intermittent,tidak_aktif,,tidak_aktif,Produk tidak aktif: tidak diprediksi.,False,False
+SLD,144,124,20,154.0,119,25,124,SELADA,tidak_aktif_terbaru,intermittent,tidak_aktif,,tidak_aktif,Produk tidak aktif: tidak diprediksi.,False,False
+SYR,144,121,8,47.0,119,25,121,SAYUR,tidak_aktif_terbaru,intermittent,tidak_aktif,,tidak_aktif,Produk tidak aktif: tidak diprediksi.,False,False
+TTL,144,100,8,53.0,119,25,100,TEH BUNGA TELANG,aktif,intermittent,heuristik,,heuristik,Tanpa model: rata-rata & std demand mentah.,False,True
+URE,144,60,1,4.0,119,25,60,UREA,tidak_aktif_terbaru,data_tidak_cukup,tidak_aktif,,tidak_aktif,Produk tidak aktif: tidak diprediksi.,False,False

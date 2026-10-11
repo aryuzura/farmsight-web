@@ -1,0 +1,10 @@
+kode_produk,model_terbaik,rmse_backtest_train,mae,rmse,mase,nama_produk,tier_model,keandalan,catatan_keandalan
+MDT,arima,4.52864753132923,2.6082766921701706,3.518796521496456,0.4667949061632962,MEDIA TANAM,penuh,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.
+KKG,arima,12.86368235203227,5.202238536494837,8.781514943075452,0.47646670708083555,KANGKUNG,penuh,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.
+LDB,arima,2.372249836237209,0.7677414139082828,1.670129475469137,0.4077270785727603,LIDAH BUAYA,penuh,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.
+PSK,arima,7.547158418844211,1.3363434261148075,2.4709713821235972,0.35416752003589164,PISANG KEPOK,penuh,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.
+MLB,croston_sba,5.798143073162386,5.421235474962156,12.013729814753795,1.5136213007016845,MINUMAN LIDAH BUAYA,penuh,rendah,TIDAK mengalahkan tebakan naive (MASE>=1) -> jangan dijadikan acuan utama; gunakan sebagai indikasi saja.
+PPK,arima,1.505340230383268,1.7817998008333458,2.993621518779137,1.7817998008333458,PUPUK,ringan,rendah,TIDAK mengalahkan tebakan naive (MASE>=1) -> jangan dijadikan acuan utama; gunakan sebagai indikasi saja.
+CKP,croston_sba,22.30721547844693,2.3983530722949067,2.884092529114787,0.4322957389568597,COKLAT PERMEN,ringan,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.
+PMJ,arima,1.4135682194392785,0.861124169206806,1.411652199813678,1.308908737194345,PERMEN JELLY,ringan,rendah,TIDAK mengalahkan tebakan naive (MASE>=1) -> jangan dijadikan acuan utama; gunakan sebagai indikasi saja.
+LBP,arima,3.025175444203317,0.4880356779189542,1.4343222088871255,0.422233114604039,LABU PRIDA,ringan,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.

@@ -1,0 +1,4 @@
+parameter,nilai,satuan
+tenaga_kerja,10.0,orang
+lead_time_global,1.0,hari
+lead_time_minimum,1.0,hari

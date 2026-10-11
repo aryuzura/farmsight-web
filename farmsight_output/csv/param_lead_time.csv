@@ -1,0 +1,39 @@
+kode_produk,n_lt_valid,lt_median,lt_maks,share_lt_nol,lt_pesan_keluar_median,lead_time_hari_asli,lt_dilantai,lead_time_hari,pola_pengadaan,sumber_lead_time,lead_time_minggu
+BLB,4,1.0,2,0.5,0.0,1.0,0,1.0,butuh_waktu_siap,produk (>=3 observasi valid),0.14285714285714285
+BMG,2,0.0,0,1.0,0.0,1.0,0,1.0,butuh_waktu_siap,median global (data produk kurang),0.14285714285714285
+BSY,3,0.0,2,0.6666666666666666,0.0,0.0,1,1.0,siap_hari_yang_sama,produk (>=3 observasi valid),0.14285714285714285
+BYM,10,1.0,1,0.0,0.0,1.0,0,1.0,butuh_waktu_siap,produk (>=3 observasi valid),0.14285714285714285
+CKP,3,0.0,3,0.6666666666666666,0.0,0.0,1,1.0,siap_hari_yang_sama,produk (>=3 observasi valid),0.14285714285714285
+CRG,2,0.0,0,1.0,0.0,1.0,0,1.0,butuh_waktu_siap,median global (data produk kurang),0.14285714285714285
+GRG,2,0.5,1,0.5,0.0,1.0,0,1.0,butuh_waktu_siap,median global (data produk kurang),0.14285714285714285
+HSP,13,1.0,1,0.0,0.0,1.0,0,1.0,butuh_waktu_siap,produk (>=3 observasi valid),0.14285714285714285
+JGG,4,1.0,1,0.0,0.0,1.0,0,1.0,butuh_waktu_siap,produk (>=3 observasi valid),0.14285714285714285
+JHE,3,1.0,1,0.0,0.0,1.0,0,1.0,butuh_waktu_siap,produk (>=3 observasi valid),0.14285714285714285
+KCT,2,0.0,0,1.0,0.0,1.0,0,1.0,butuh_waktu_siap,median global (data produk kurang),0.14285714285714285
+KJG,2,0.0,0,1.0,0.0,1.0,0,1.0,butuh_waktu_siap,median global (data produk kurang),0.14285714285714285
+KKG,16,1.0,1,0.0,0.0,1.0,0,1.0,butuh_waktu_siap,produk (>=3 observasi valid),0.14285714285714285
+KMG,5,1.0,1,0.0,0.0,1.0,0,1.0,butuh_waktu_siap,produk (>=3 observasi valid),0.14285714285714285
+KNK,2,1.0,1,0.0,0.0,1.0,0,1.0,butuh_waktu_siap,median global (data produk kurang),0.14285714285714285
+KRB,2,0.0,0,1.0,0.0,1.0,0,1.0,butuh_waktu_siap,median global (data produk kurang),0.14285714285714285
+KRL,2,0.0,0,1.0,0.0,1.0,0,1.0,butuh_waktu_siap,median global (data produk kurang),0.14285714285714285
+KRY,3,0.0,0,1.0,0.0,0.0,1,1.0,siap_hari_yang_sama,produk (>=3 observasi valid),0.14285714285714285
+LBP,4,1.0,1,0.0,0.0,1.0,0,1.0,butuh_waktu_siap,produk (>=3 observasi valid),0.14285714285714285
+LDB,11,1.0,1,0.0,4.0,1.0,0,1.0,butuh_waktu_siap,produk (>=3 observasi valid),0.14285714285714285
+MDT,14,0.0,0,1.0,0.0,0.0,1,1.0,siap_hari_yang_sama,produk (>=3 observasi valid),0.14285714285714285
+MLB,5,2.0,2,0.0,3.0,2.0,0,2.0,butuh_waktu_siap,produk (>=3 observasi valid),0.2857142857142857
+MNJ,2,1.0,2,0.5,3.0,1.0,0,1.0,butuh_waktu_siap,median global (data produk kurang),0.14285714285714285
+MNM,3,1.0,1,0.0,2.5,1.0,0,1.0,butuh_waktu_siap,produk (>=3 observasi valid),0.14285714285714285
+MNT,2,1.0,1,0.0,3.0,1.0,0,1.0,butuh_waktu_siap,median global (data produk kurang),0.14285714285714285
+PKC,1,1.0,1,0.0,0.0,1.0,0,1.0,butuh_waktu_siap,median global (data produk kurang),0.14285714285714285
+PLB,8,2.0,3,0.125,4.0,2.0,0,2.0,butuh_waktu_siap,produk (>=3 observasi valid),0.2857142857142857
+PMJ,3,0.0,0,1.0,0.0,0.0,1,1.0,siap_hari_yang_sama,produk (>=3 observasi valid),0.14285714285714285
+PNP,1,0.0,0,1.0,0.0,1.0,0,1.0,butuh_waktu_siap,median global (data produk kurang),0.14285714285714285
+PPK,3,0.0,0,1.0,0.0,0.0,1,1.0,siap_hari_yang_sama,produk (>=3 observasi valid),0.14285714285714285
+PSK,6,1.0,1,0.0,0.0,1.0,0,1.0,butuh_waktu_siap,produk (>=3 observasi valid),0.14285714285714285
+PYB,1,0.0,0,1.0,0.0,1.0,0,1.0,butuh_waktu_siap,median global (data produk kurang),0.14285714285714285
+RJK,2,0.0,0,1.0,0.0,1.0,0,1.0,butuh_waktu_siap,median global (data produk kurang),0.14285714285714285
+SAW,10,1.0,1,0.0,0.0,1.0,0,1.0,butuh_waktu_siap,produk (>=3 observasi valid),0.14285714285714285
+SLD,6,1.0,1,0.0,0.0,1.0,0,1.0,butuh_waktu_siap,produk (>=3 observasi valid),0.14285714285714285
+SYR,8,1.0,1,0.0,0.0,1.0,0,1.0,butuh_waktu_siap,produk (>=3 observasi valid),0.14285714285714285
+TTL,2,0.0,0,1.0,0.0,1.0,0,1.0,butuh_waktu_siap,median global (data produk kurang),0.14285714285714285
+URE,1,0.0,0,1.0,0.0,1.0,0,1.0,butuh_waktu_siap,median global (data produk kurang),0.14285714285714285

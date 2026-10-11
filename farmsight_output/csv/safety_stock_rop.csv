@@ -1,0 +1,24 @@
+kode_produk,nama_produk,satuan_produk,tier_model,keandalan,metode_dasar,d_rata_minggu,sigma_dipakai,lead_time_minggu,sumber_lead_time,lt_dilantai,pola_pengadaan,safety_stock,reorder_point
+MLB,MINUMAN LIDAH BUAYA,BOTOL,penuh,rendah,"model (croston_sba), sigma dari residual test",2.2,12.19,0.29,produk (>=3 observasi valid),0,butuh_waktu_siap,10.72,11.35
+KKG,KANGKUNG,IKAT,penuh,cukup,"model (arima), sigma dari residual test",6.76,8.86,0.14,produk (>=3 observasi valid),0,butuh_waktu_siap,5.51,6.47
+MDT,MEDIA TANAM,SACK,penuh,cukup,"model (arima), sigma dari residual test",3.31,3.27,0.14,produk (>=3 observasi valid),1,siap_hari_yang_sama,2.03,2.51
+CKP,COKLAT PERMEN,GR,ringan,cukup,"model (croston_sba), sigma dari residual test",2.54,2.75,0.14,produk (>=3 observasi valid),1,siap_hari_yang_sama,1.71,2.07
+PPK,PUPUK,SACK,ringan,rendah,"model (arima), sigma dari residual test",0.81,2.84,0.14,produk (>=3 observasi valid),1,siap_hari_yang_sama,1.77,1.88
+PSK,PISANG KEPOK,SISIR,penuh,cukup,"model (arima), sigma dari residual test",2.29,2.45,0.14,produk (>=3 observasi valid),0,butuh_waktu_siap,1.53,1.85
+MNM,MINUMAN,BOTOL,heuristik,heuristik,"heuristik (rata-rata & std demand mentah train, TANPA model)",0.47,2.65,0.14,produk (>=3 observasi valid),0,butuh_waktu_siap,1.65,1.71
+JHE,JAHE,GR,heuristik,heuristik,"heuristik (rata-rata & std demand mentah train, TANPA model)",0.43,1.99,0.14,produk (>=3 observasi valid),0,butuh_waktu_siap,1.24,1.3
+KRY,KERIPIK BAYAM,GR,heuristik,heuristik,"heuristik (rata-rata & std demand mentah train, TANPA model)",0.39,1.99,0.14,produk (>=3 observasi valid),1,siap_hari_yang_sama,1.24,1.29
+LDB,LIDAH BUAYA,KG,penuh,cukup,"model (arima), sigma dari residual test",0.95,1.66,0.14,produk (>=3 observasi valid),0,butuh_waktu_siap,1.03,1.17
+TTL,TEH BUNGA TELANG,GR,heuristik,heuristik,"heuristik (rata-rata & std demand mentah train, TANPA model)",0.25,1.59,0.14,median global (data produk kurang),0,butuh_waktu_siap,0.99,1.03
+LBP,LABU PRIDA,KG,ringan,cukup,"model (arima), sigma dari residual test",0.61,1.43,0.14,produk (>=3 observasi valid),0,butuh_waktu_siap,0.89,0.98
+PMJ,PERMEN JELLY,GR,ringan,rendah,"model (arima), sigma dari residual test",0.46,1.44,0.14,produk (>=3 observasi valid),1,siap_hari_yang_sama,0.9,0.96
+MNT,MINUMAN TIMUN,BOTOL,heuristik,heuristik,"heuristik (rata-rata & std demand mentah train, TANPA model)",0.15,1.27,0.14,median global (data produk kurang),0,butuh_waktu_siap,0.79,0.81
+KMG,KEMANGI,IKAT,heuristik,heuristik,"heuristik (rata-rata & std demand mentah train, TANPA model)",0.17,1.2,0.14,produk (>=3 observasi valid),0,butuh_waktu_siap,0.75,0.77
+MNJ,MINUMAN JERUK,BOTOL,heuristik,heuristik,"heuristik (rata-rata & std demand mentah train, TANPA model)",0.13,1.15,0.14,median global (data produk kurang),0,butuh_waktu_siap,0.72,0.74
+CRG,CIRENG,PCS,heuristik,heuristik,"heuristik (rata-rata & std demand mentah train, TANPA model)",0.09,0.81,0.14,median global (data produk kurang),0,butuh_waktu_siap,0.5,0.52
+KCT,KACANG TELOR,GR,heuristik,heuristik,"heuristik (rata-rata & std demand mentah train, TANPA model)",0.09,0.81,0.14,median global (data produk kurang),0,butuh_waktu_siap,0.5,0.52
+BMG,BAWANG MERAH GORENG,GR,heuristik,heuristik,"heuristik (rata-rata & std demand mentah train, TANPA model)",0.09,0.8,0.14,median global (data produk kurang),0,butuh_waktu_siap,0.5,0.51
+KJG,KERIPIK JAGUNG GEPREK,GR,heuristik,heuristik,"heuristik (rata-rata & std demand mentah train, TANPA model)",0.08,0.69,0.14,median global (data produk kurang),0,butuh_waktu_siap,0.43,0.44
+RJK,RUJAK KANGKUNG,PORSI,heuristik,heuristik,"heuristik (rata-rata & std demand mentah train, TANPA model)",0.07,0.58,0.14,median global (data produk kurang),0,butuh_waktu_siap,0.36,0.37
+KRL,KERIPIK LABU,GR,heuristik,heuristik,"heuristik (rata-rata & std demand mentah train, TANPA model)",0.05,0.46,0.14,median global (data produk kurang),0,butuh_waktu_siap,0.29,0.29
+GRG,GORENGAN,PCS,heuristik,heuristik,"heuristik (rata-rata & std demand mentah train, TANPA model)",0.04,0.35,0.14,median global (data produk kurang),0,butuh_waktu_siap,0.22,0.22

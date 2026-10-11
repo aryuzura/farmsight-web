@@ -1,0 +1,39 @@
+kode_produk,nama_produk,status_produk,minggu_sejak_terakhir_jual,n_minggu_train,n_pos_train,adi,cv2,n_pos_test,pola_demand,layak_model,saran_metode
+MDT,MEDIA TANAM,aktif,0,98.0,37.0,2.6486486486486487,0.5527592242526079,12.0,lumpy,1,Croston/SBA (bandingkan dengan ARIMA atau rata-rata bergerak; demand jarang)
+KKG,KANGKUNG,aktif,6,99.0,35.0,2.8285714285714287,0.6467722031435179,5.0,lumpy,1,Croston/SBA (bandingkan dengan ARIMA atau rata-rata bergerak; demand jarang)
+BYM,BAYAM,tidak_aktif_terbaru,41,99.0,31.0,3.193548387096774,0.19224720634751083,0.0,intermittent,0,Tidak terjual > 26 minggu: konfirmasi apakah dihentikan; jangan diprediksi
+HSP,HASIL PANEN,tidak_aktif_terbaru,40,98.0,31.0,3.161290322580645,0.5580967598097503,0.0,lumpy,0,Tidak terjual > 26 minggu: konfirmasi apakah dihentikan; jangan diprediksi
+SAW,SAWI,tidak_aktif_terbaru,48,99.0,25.0,3.96,0.2390710382513661,0.0,intermittent,0,Tidak terjual > 26 minggu: konfirmasi apakah dihentikan; jangan diprediksi
+PLB,PERMEN LIDAH BUAYA,tidak_aktif_terbaru,39,99.0,24.0,4.125,0.6169278523938179,0.0,lumpy,0,Tidak terjual > 26 minggu: konfirmasi apakah dihentikan; jangan diprediksi
+SLD,SELADA,tidak_aktif_terbaru,56,99.0,20.0,4.95,0.17239083541202477,0.0,intermittent,0,Tidak terjual > 26 minggu: konfirmasi apakah dihentikan; jangan diprediksi
+LDB,LIDAH BUAYA,aktif,2,95.0,16.0,5.9375,0.14354997789341223,3.0,intermittent,1,Croston/SBA (bandingkan dengan ARIMA atau rata-rata bergerak; demand jarang)
+PSK,PISANG KEPOK,aktif,0,98.0,15.0,6.533333333333333,0.46712802768166084,7.0,intermittent,1,Croston/SBA (bandingkan dengan ARIMA atau rata-rata bergerak; demand jarang)
+MLB,MINUMAN LIDAH BUAYA,aktif,0,99.0,13.0,7.615384615384615,0.4075874485596708,4.0,intermittent,1,Croston/SBA (bandingkan dengan ARIMA atau rata-rata bergerak; demand jarang)
+BLB,BIBIT LIDAH BUAYA,tidak_aktif_terbaru,43,96.0,9.0,10.666666666666666,0.4788,0.0,intermittent,0,Tidak terjual > 26 minggu: konfirmasi apakah dihentikan; jangan diprediksi
+JGG,JAGUNG,tidak_aktif_terbaru,43,96.0,9.0,10.666666666666666,0.5298836554700697,0.0,lumpy,0,Tidak terjual > 26 minggu: konfirmasi apakah dihentikan; jangan diprediksi
+BSY,BIBIT SAYURAN,tidak_aktif_terbaru,53,96.0,9.0,10.666666666666666,0.2908264462809918,0.0,intermittent,0,Tidak terjual > 26 minggu: konfirmasi apakah dihentikan; jangan diprediksi
+PPK,PUPUK,aktif,2,78.0,8.0,9.75,0.1971722166422004,9.0,intermittent,0,Data terlalu sedikit: pakai rata-rata bergerak / aturan stok minimum
+SYR,SAYUR,tidak_aktif_terbaru,43,96.0,8.0,12.0,0.27678975619220075,0.0,intermittent,0,Tidak terjual > 26 minggu: konfirmasi apakah dihentikan; jangan diprediksi
+KRB,KERIPIK BAWANG,tidak_aktif_terbaru,59,98.0,7.0,14.0,0.1111111111111111,0.0,intermittent,0,Tidak terjual > 26 minggu: konfirmasi apakah dihentikan; jangan diprediksi
+CKP,COKLAT PERMEN,aktif,2,74.0,7.0,10.571428571428571,4.004738637529498,3.0,lumpy,0,Data terlalu sedikit: pakai rata-rata bergerak / aturan stok minimum
+PMJ,PERMEN JELLY,aktif,0,77.0,5.0,15.4,0.2854671280276817,3.0,intermittent,0,Data terlalu sedikit: pakai rata-rata bergerak / aturan stok minimum
+LBP,LABU PRIDA,aktif,1,78.0,5.0,15.6,0.8125667497330012,2.0,lumpy,0,Data terlalu sedikit: pakai rata-rata bergerak / aturan stok minimum
+JHE,JAHE,aktif,2,79.0,4.0,19.75,0.16147635524798154,3.0,intermittent,0,Data terlalu sedikit: pakai rata-rata bergerak / aturan stok minimum
+MNM,MINUMAN,aktif,2,79.0,4.0,19.75,0.8677867056245435,2.0,lumpy,0,Data terlalu sedikit: pakai rata-rata bergerak / aturan stok minimum
+KRY,KERIPIK BAYAM,aktif,2,74.0,3.0,24.666666666666668,0.11058263971462544,5.0,intermittent,0,Data terlalu sedikit: pakai rata-rata bergerak / aturan stok minimum
+KMG,KEMANGI,aktif,5,75.0,2.0,37.5,0.5798816568047337,3.0,lumpy,0,Data terlalu sedikit: pakai rata-rata bergerak / aturan stok minimum
+KNK,KENIKIR,tidak_aktif_terbaru,69,56.0,2.0,28.0,0.22222222222222227,0.0,intermittent,0,Tidak terjual > 26 minggu: konfirmasi apakah dihentikan; jangan diprediksi
+TTL,TEH BUNGA TELANG,aktif,4,75.0,2.0,37.5,0.13850415512465375,6.0,intermittent,0,Data terlalu sedikit: pakai rata-rata bergerak / aturan stok minimum
+BMG,BAWANG MERAH GORENG,aktif,6,76.0,1.0,76.0,,4.0,data_tidak_cukup,0,Data terlalu sedikit: pakai rata-rata bergerak / aturan stok minimum
+CRG,CIRENG,aktif,4,75.0,1.0,75.0,,3.0,data_tidak_cukup,0,Data terlalu sedikit: pakai rata-rata bergerak / aturan stok minimum
+GRG,GORENGAN,aktif,4,75.0,1.0,75.0,,3.0,data_tidak_cukup,0,Data terlalu sedikit: pakai rata-rata bergerak / aturan stok minimum
+KJG,KERIPIK JAGUNG GEPREK,aktif,5,75.0,1.0,75.0,,3.0,data_tidak_cukup,0,Data terlalu sedikit: pakai rata-rata bergerak / aturan stok minimum
+KCT,KACANG TELOR,aktif,4,75.0,1.0,75.0,,3.0,data_tidak_cukup,0,Data terlalu sedikit: pakai rata-rata bergerak / aturan stok minimum
+KRL,KERIPIK LABU,aktif,6,76.0,1.0,76.0,,4.0,data_tidak_cukup,0,Data terlalu sedikit: pakai rata-rata bergerak / aturan stok minimum
+MNJ,MINUMAN JERUK,aktif,4,75.0,1.0,75.0,,3.0,data_tidak_cukup,0,Data terlalu sedikit: pakai rata-rata bergerak / aturan stok minimum
+MNT,MINUMAN TIMUN,aktif,4,75.0,1.0,75.0,,3.0,data_tidak_cukup,0,Data terlalu sedikit: pakai rata-rata bergerak / aturan stok minimum
+PKC,PAKCOY,tidak_aktif_terbaru,76,52.0,1.0,52.0,,0.0,data_tidak_cukup,0,Tidak terjual > 26 minggu: konfirmasi apakah dihentikan; jangan diprediksi
+PNP,PUPUK NPK,tidak_aktif_terbaru,59,35.0,1.0,35.0,,0.0,data_tidak_cukup,0,Tidak terjual > 26 minggu: konfirmasi apakah dihentikan; jangan diprediksi
+PYB,PEYEK BAYAM,tidak_aktif_terbaru,53,29.0,1.0,29.0,,0.0,data_tidak_cukup,0,Tidak terjual > 26 minggu: konfirmasi apakah dihentikan; jangan diprediksi
+RJK,RUJAK KANGKUNG,aktif,4,75.0,1.0,75.0,,3.0,data_tidak_cukup,0,Data terlalu sedikit: pakai rata-rata bergerak / aturan stok minimum
+URE,UREA,tidak_aktif_terbaru,59,35.0,1.0,35.0,,0.0,data_tidak_cukup,0,Tidak terjual > 26 minggu: konfirmasi apakah dihentikan; jangan diprediksi

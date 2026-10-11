@@ -1,0 +1,17 @@
+tabel,kolom,keterangan
+fact_demand_mingguan,y,Demand mingguan mentah (unit jual). NaN jika periode tidak tercatat / produk belum dijual. GUNAKAN untuk evaluasi.
+fact_demand_mingguan,y_model,Demand setelah cap outlier (train saja). GUNAKAN untuk melatih model. Test = sama dengan y.
+fact_demand_mingguan,y_log1p,"log1p(y_model). Jika model dilatih pada skala ini, kembalikan hasil dengan np.expm1."
+fact_demand_mingguan,split,train / test (kronologis; tanggal potong ada di split_info & config.json).
+fact_demand_mingguan,status_periode,"operasional / tidak_tercatat / sebelum_produk_dijual / di_luar_rentang. Hanya ""operasional"" yang dipakai model."
+fact_demand_mingguan,is_outlier / dicap,Outlier terdeteksi / benar-benar dicap (test tidak pernah dicap).
+fact_demand_mingguan,"ada_bazaar, ada_mini_bazaar",Ada event pada minggu tsb. Aman dipakai sebagai regresor (jadwal event diketahui sebelumnya).
+fact_demand_mingguan,"stok_masuk, n_batch_stok",Info persediaan. JANGAN dipakai sebagai regresor forecasting (jumlah masuk dipengaruhi demand).
+fact_siklus_stok,demand_aktual_siklus,"= floor(jumlah_produk_masuk / 1,2) (rumus, BUKAN demand terukur). Jangan dipakai sebagai fitur/target; pakai demand_siklus_hitung (dari penjualan nyata)."
+fact_siklus_stok,"sisa_stok, rasio_pemakaian","Berbasis kolom demand_aktual_siklus, yang terdeteksi = floor(jumlah masuk / 1.2) (rumus, bukan demand terukur) -> tidak informatif."
+fact_siklus_stok,"sisa_stok_hitung, rasio_pemakaian_hitung",Jumlah masuk - demand siklus dari PENJUALAN nyata (demand_siklus_hitung); dan rasionya. Gunakan ini.
+param_lead_time,pola_pengadaan,'siap_hari_yang_sama' jika median lead time 0 hari (>=3 batch); selain itu 'butuh_waktu_siap'.
+param_lead_time,lead_time_hari,"Median lead time per produk = tanggal_barang_masuk - tanggal_pemesanan (pesanan pelanggan -> barang jadi/restock; fallback median global), DENGAN LANTAI MIN_LEAD_TIME_HARI. lead_time_hari_asli = sebelum dilantai; lt_dilantai = 1 jika dinaikkan. "
+profil_produk,"pola_demand, layak_model, saran_metode",Klasifikasi ADI/CV² dan kelayakan ARIMA/Croston (dari train).
+karantina_data,*,Semua baris yang dibuang/dikeluarkan beserta alasannya.
+log_audit_pembersihan,*,Catatan setiap aturan cleaning: jumlah baris terdampak & tindakan.

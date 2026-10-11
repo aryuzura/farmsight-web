@@ -1,0 +1,38 @@
+sumber,tahap,aturan,jumlah_baris,tindakan,keterangan
+penjualan,cleaning,header kolom kosong (Unnamed) -> dinamai selisih_hari_csv,1,diperbaiki,
+penjualan,cleaning,baris kosong total,0,dikarantina (dibuang),
+penjualan,cleaning,spasi berlebih / huruf besar-kecil pada nama produk,0,diperbaiki,
+penjualan,cleaning,nama beda pada kode sama -> nama baku,1,diperbaiki,TTL: ES TELANG
+penjualan,cleaning,koma desimal pada ukuran_harga,5,diperbaiki (koma -> titik),
+penjualan,cleaning,tanggal ditulis dd/mm (bukan mm/dd) -> dibaca ulang memakai selisih hari CSV + urutan baris,284,diperbaiki,selisih pemesanan->keluar cocok dgn CSV: 723 dari 723 baris (sebelum perbaikan: 650)
+penjualan,cleaning,kolom kunci kosong (kode/tanggal keluar/jumlah),0,dikarantina (dibuang),
+penjualan,cleaning,jumlah_produk_dibeli <= 0,0,dikarantina (dibuang),
+penjualan,cleaning,harga_satuan kosong / <= 0,0,dikarantina (dibuang),
+penjualan,cleaning,"duplikat persis (semua kolom, kecuali nomor baris)",0,dikarantina (dibuang),
+penjualan,cleaning,verifikasi kolom tanpa nama = selisih hari pesan->keluar,0,terverifikasi,cocok 723 dari 723 baris
+penjualan,cleaning,tanggal keluar < tanggal pemesanan,1,ditandai; selisih_hari dikosongkan,
+penjualan,cleaning,total_transaksi != jumlah x harga - diskon,6,ditandai,
+penjualan,cleaning,tanggal barang keluar setelah 2026-10-09 (masa depan),21,dikeluarkan dari pemodelan,"periksa: salah ketik tahun/bulan, atau pesanan terjadwal?"
+penjualan,cleaning,ringkasan,0,selesai,723 baris awal -> 723 baris lolos validitas
+stok,cleaning,header ganda (mis. tanggal_pemesanantanggal_pemesanan),0,diperbaiki,
+stok,cleaning,baris kosong total,0,dikarantina (dibuang),
+stok,cleaning,kode_produk tidak ada di data penjualan,0,ditandai,
+stok,cleaning,kolom kunci kosong,0,dikarantina (dibuang),
+stok,cleaning,jumlah_produk_masuk <= 0,0,dikarantina (dibuang),
+stok,cleaning,demand_aktual_siklus negatif,0,dikarantina (dibuang),
+stok,cleaning,duplikat persis,0,dikarantina (dibuang),
+stok,cleaning,"batch ganda (kode_produk + tanggal keluar sama) -> digabung, jumlah dijumlahkan",5,digabung,10 baris -> 5 batch
+stok,cleaning,demand siklus > jumlah masuk,0,ditandai,
+stok,cleaning,tanggal keluar < tanggal masuk,0,ditandai,
+stok,cleaning,barang jadi/masuk SEBELUM tanggal pesanan pelanggan (lead time negatif),0,ditandai; dikecualikan dari perhitungan lead time,barang sudah jadi sebelum ada pesanan pelanggan (stok siap) -> bukan waktu tunggu pesanan; dikecualikan dari lead time
+stok,cleaning,demand_aktual_siklus = floor(jumlah_produk_masuk / 1.2),175,ditandai,100% baris cocok rumus -> kolom ini BUKAN demand terukur (stok masuk = demand x 1.2). Demand dihitung dari data penjualan.
+stok,cleaning,stok terpakai < 10% dari yang masuk,0,ditandai,bisa overstock nyata atau salah ketik jumlah masuk
+stok,cleaning,tanggal setelah 2026-10-09 (masa depan),2,dikeluarkan dari pemodelan,
+stok,cleaning,ringkasan,0,selesai,180 baris awal -> 175 baris lolos validitas
+tenaga_kerja,cleaning,validasi,0,ok,jumlah tenaga kerja = 10
+integrasi,integration,produk tidak terjual > 26 minggu terakhir,15,ditandai,"apakah produk dihentikan? jika ya, jangan diprediksi"
+integrasi,integration,satuan penjualan != satuan stok,0,ditandai,
+integrasi,integration,demand_aktual_siklus != jumlah penjualan dalam siklus,98,ditandai,cocok 77 dari 175 batch
+integrasi,integration,lead time < 1.0 hari dinaikkan ke lantai,6,diubah,median 0 hari (barang jadi di hari pesanan) -> ROP/SS = 0; dinaikkan ke lantai perencanaan
+integrasi,integration,"uji integritas (grain, kode yatim, rekonsiliasi total)",0,lolos,
+transformasi,outlier,"outlier IQR(log1p) per produk, batas dari train",2,dicap (winsorize) di train saja,"terdeteksi total 3 (termasuk test, tidak dicap)"
