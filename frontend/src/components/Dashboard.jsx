@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   BarChart,
   Bar,
+  ComposedChart,
+  Line,
+  LabelList,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -205,6 +208,9 @@ const Dashboard = () => {
   const [dashboardProducts, setDashboardProducts] = useState([]);
   const [operationalScore, setOperationalScore] = useState(null);
   const [dashboardDataError, setDashboardDataError] = useState('');
+
+  // Horizon forecast pendapatan (jumlah minggu ke depan yang ditampilkan).
+  const [forecastHorizon, setForecastHorizon] = useState(4);
 
   useEffect(() => {
     let cancelled = false;
@@ -514,6 +520,33 @@ const Dashboard = () => {
         item.stok_tercatat <= item.ROP
     );
 
+    // Produk aktif = bukan 'tidak_aktif_terbaru'.
+    const activeProducts = mergedProducts.filter(
+      (item) => item.status_produk !== 'tidak_aktif_terbaru'
+    );
+
+    const activeCount = activeProducts.length;
+
+    const activeModeledCount = activeProducts.filter(
+      (item) =>
+        item.model_terbaik !== null &&
+        String(item.model_terbaik).trim() !== ''
+    ).length;
+
+    const activeHeuristicCount = activeProducts.filter(
+      (item) =>
+        !item.model_terbaik && item.tier_model === 'heuristik'
+    ).length;
+
+    // Produk dengan catatan stok dan ROP yang dapat dibandingkan.
+    const ropComparable = mergedProducts.filter(
+      (item) => item.stok_tercatat !== null && item.ROP !== null
+    );
+
+    const ropAboveCount = ropComparable.filter(
+      (item) => item.stok_tercatat > item.ROP
+    ).length;
+
     const missingModelProducts = mergedProducts.filter(
       (item) =>
         item.model_terbaik === null ||
@@ -541,6 +574,12 @@ const Dashboard = () => {
       missingModelProducts,
       chartData,
 
+      activeCount,
+      activeModeledCount,
+      activeHeuristicCount,
+      ropComparableCount: ropComparable.length,
+      ropAboveCount,
+
       inventoryLogCount: inventoryData.length,
       uniqueInventoryProducts: latestInventoryByProduct.size,
 
@@ -552,6 +591,163 @@ const Dashboard = () => {
       siklusLeadTimeNegatif,
     };
   }, [forecastData, inventoryData]);
+
+  /*
+   * Forecast pendapatan menurut horizon.
+   * Backend mengirim satu baris per minggu. Horizon N minggu = N minggu
+   * pertama, jadi angkanya sama persis dengan data backend. Horizon
+   * maksimum mengikuti jumlah minggu pada forecast_kedepan.csv.
+   */
+  const forecastView = useMemo(() => {
+    const dateShort = (date) =>
+      date.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+      });
+
+    const dateLong = (date) =>
+      date.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      });
+
+    const weeks = (Array.isArray(revenueForecastData)
+      ? revenueForecastData
+      : []
+    )
+      .map((item) => ({
+        minggu_mulai: item.minggu_mulai ?? item.tanggal ?? null,
+        pendapatan: normalizeNumber(
+          item.estimasi_pendapatan ?? item.forecast_pendapatan
+        ),
+        demand: normalizeNumber(item.total_prediksi_demand),
+        produk: normalizeNumber(item.jumlah_produk),
+      }))
+      .filter(
+        (item) =>
+          item.minggu_mulai &&
+          item.pendapatan !== null &&
+          !Number.isNaN(new Date(`${item.minggu_mulai}T00:00:00`).getTime())
+      )
+      .sort((a, b) =>
+        String(a.minggu_mulai).localeCompare(String(b.minggu_mulai))
+      );
+
+    const maxWeeks = weeks.length;
+    const horizon = Math.min(
+      Math.max(Number(forecastHorizon) || 1, 1),
+      Math.max(maxWeeks, 1)
+    );
+
+    let running = 0;
+
+    const rows = weeks.slice(0, horizon).map((item, index) => {
+      running += item.pendapatan;
+
+      const start = new Date(`${item.minggu_mulai}T00:00:00`);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 6);
+
+      return {
+        ...item,
+        minggu_ke: index + 1,
+        tanggalLabel: dateShort(start),
+        rentang: `${dateShort(start)} – ${dateLong(end)}`,
+        kumulatif: running,
+      };
+    });
+
+    const totalDemand = rows.reduce(
+      (total, item) => total + (item.demand ?? 0),
+      0
+    );
+
+    return {
+      rows,
+      maxWeeks,
+      horizon,
+      totalRevenue: running,
+      totalDemand,
+      averageRevenue: rows.length > 0 ? running / rows.length : null,
+      productCount: rows.reduce(
+        (max, item) => Math.max(max, item.produk ?? 0),
+        0
+      ),
+      periodLabel:
+        rows.length > 0
+          ? `${rows[0].rentang.split(' – ')[0]} sampai ${rows[rows.length - 1].rentang.split(' – ')[1]}`
+          : '',
+    };
+  }, [revenueForecastData, forecastHorizon]);
+
+  /*
+   * Skor kesehatan bisnis.
+   * 1) Jika backend mengirim skor_kesehatan_bisnis, nilai itu dipakai.
+   * 2) Jika belum, dihitung skor gabungan SEMENTARA dari indikator
+   *    yang benar-benar ada di data, dengan bobot yang ditampilkan
+   *    terbuka pada kartu agar mudah diperiksa dan diubah.
+   */
+  const healthInfo = useMemo(() => {
+    const backendScore = normalizeNumber(
+      dashboardKpi?.skor_kesehatan_bisnis
+    );
+
+    if (backendScore !== null) {
+      return {
+        score: backendScore,
+        label: dashboardKpi?.label_kesehatan_bisnis ?? null,
+        komponen: dashboardKpi?.komponen_skor_kesehatan_bisnis ?? [],
+        source: 'backend',
+      };
+    }
+
+    const utilisasi = normalizeNumber(
+      operationalScore?.skor_operasional
+    );
+
+    const kepatuhanRop =
+      dashboardData.ropComparableCount > 0
+        ? (dashboardData.ropAboveCount /
+            dashboardData.ropComparableCount) *
+          100
+        : null;
+
+    const cakupanModel =
+      dashboardData.activeCount > 0
+        ? (dashboardData.activeModeledCount /
+            dashboardData.activeCount) *
+          100
+        : null;
+
+    const komponen = [
+      { nama: 'Utilisasi stok', nilai: utilisasi, bobot: 40 },
+      { nama: 'Stok di atas ROP', nilai: kepatuhanRop, bobot: 30 },
+      { nama: 'Produk aktif bermodel', nilai: cakupanModel, bobot: 30 },
+    ];
+
+    const tersedia = komponen.filter((item) => item.nilai !== null);
+
+    if (tersedia.length < 2) {
+      return { score: null, label: null, komponen, source: 'none' };
+    }
+
+    const totalBobot = tersedia.reduce(
+      (total, item) => total + item.bobot,
+      0
+    );
+
+    const score =
+      tersedia.reduce(
+        (total, item) => total + item.nilai * item.bobot,
+        0
+      ) / totalBobot;
+
+    const label =
+      score >= 75 ? 'Baik' : score >= 50 ? 'Cukup' : 'Perlu perhatian';
+
+    return { score, label, komponen, source: 'sementara' };
+  }, [dashboardKpi, operationalScore, dashboardData]);
 
   const insights = useMemo(() => {
     const result = [];
@@ -615,63 +811,190 @@ const Dashboard = () => {
         'Tinjau catatan yang memiliki flag sebelum menggunakannya untuk analisis persediaan.',
     });
 
-    if (dashboardData.missingModelProducts.length > 0) {
+    {
+      const inactiveCount = total - dashboardData.activeCount;
+      const unmodeled =
+        dashboardData.activeCount -
+        dashboardData.activeModeledCount -
+        dashboardData.activeHeuristicCount;
+
       result.push({
-        type: 'warning',
+        type: unmodeled > 0 ? 'warning' : 'info',
         icon: '🧠',
-        title: 'Sebagian produk belum memiliki nama model',
+        title: 'Cakupan model pada produk aktif',
         description:
-          `${dashboardData.modeledCount} dari ${total} produk memiliki nama model. ` +
-          `${dashboardData.missingModelProducts.length} produk lainnya belum memiliki nama model pada respons API.`,
+          `${dashboardData.activeModeledCount} dari ${dashboardData.activeCount} produk aktif memiliki model peramalan. ` +
+          `${dashboardData.activeHeuristicCount} produk aktif memakai metode heuristik karena data penjualannya belum cukup, ` +
+          `dan ${inactiveCount} produk tidak aktif sengaja tidak diprediksi.` +
+          (unmodeled > 0
+            ? ` ${unmodeled} produk aktif belum dimodelkan.`
+            : ''),
         action:
-          'Periksa status pemodelan dan kelengkapan data produk tersebut.',
-      });
-    } else {
-      result.push({
-        type: 'success',
-        icon: '✓',
-        title: 'Nama model tersedia',
-        description: `Nama model tersedia untuk seluruh ${total} produk.`,
-        action:
-          'Tetap evaluasi kualitas model menggunakan metrik evaluasi.',
+          'Evaluasi kualitas model dengan metrik error, dan tambah data penjualan agar produk heuristik dapat dimodelkan.',
       });
     }
 
-    result.push({
-      type: 'info',
-      icon: '📈',
-      title: 'Tren penjualan belum dapat dinilai',
-      description:
-        'Data yang terhubung saat ini berupa catatan inventaris per siklus, bukan transaksi penjualan berdasarkan periode.',
-      action:
-        'Hubungkan data transaksi dengan tanggal dan kuantitas penjualan untuk menganalisis tren.',
-    });
+    // --- Tren penjualan: 90 hari terakhir vs 90 hari sebelumnya ---
+    const trendPoints = (Array.isArray(trendData) ? trendData : [])
+      .map((item) => ({
+        time: new Date(item.tanggal).getTime(),
+        value: normalizeNumber(item.pendapatan) ?? 0,
+      }))
+      .filter((item) => Number.isFinite(item.time));
 
-    result.push({
-      type: 'info',
-      icon: '🔮',
-      title: 'Prediksi permintaan perlu dilengkapi',
-      description:
-        'Endpoint forecasting saat ini menyediakan RMSE dan parameter persediaan, tetapi belum mengirim nilai prediksi permintaan per produk.',
-      action:
-        'Sediakan nilai forecast beserta periode prediksinya dari backend.',
-    });
+    if (trendPoints.length > 0) {
+      const lastTime = Math.max(...trendPoints.map((item) => item.time));
+      const day = 24 * 60 * 60 * 1000;
 
-    result.push({
-      type: 'info',
-      icon: '💰',
-      title: 'Pendapatan belum dapat dihitung',
-      description:
-        'Data harga jual dan jumlah penjualan atau prediksi kuantitas belum tersedia bersama pada data yang terhubung.',
-      action:
-        'Hubungkan data transaksi dan harga jual untuk menghitung pendapatan aktual maupun estimasi.',
-    });
+      const recent = trendPoints
+        .filter((item) => item.time > lastTime - 90 * day)
+        .reduce((total, item) => total + item.value, 0);
+
+      const previous = trendPoints
+        .filter(
+          (item) =>
+            item.time <= lastTime - 90 * day &&
+            item.time > lastTime - 180 * day
+        )
+        .reduce((total, item) => total + item.value, 0);
+
+      const lastDate = new Date(lastTime).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+
+      if (previous > 0) {
+        const change = ((recent - previous) / previous) * 100;
+        const naik = change >= 0;
+
+        result.push({
+          type: naik ? 'success' : 'warning',
+          icon: '📈',
+          title: `Pendapatan 90 hari terakhir ${naik ? 'naik' : 'turun'} ${formatNumber(Math.abs(change), 1)}%`,
+          description:
+            `Sampai ${lastDate}, pendapatan 90 hari terakhir Rp ${formatNumber(recent, 0)} ` +
+            `dibandingkan Rp ${formatNumber(previous, 0)} pada 90 hari sebelumnya.`,
+          action: naik
+            ? 'Pastikan stok produk yang laris cukup untuk menjaga momentum.'
+            : 'Tinjau produk dan periode yang menurun, lalu cocokkan dengan stok dan kegiatan penjualan.',
+        });
+      } else {
+        result.push({
+          type: 'info',
+          icon: '📈',
+          title: 'Tren penjualan belum dapat dibandingkan',
+          description:
+            `Data transaksi tersedia sampai ${lastDate}, tetapi belum ada pembanding 90 hari sebelumnya.`,
+          action:
+            'Lengkapi riwayat transaksi agar perbandingan antarperiode dapat dihitung.',
+        });
+      }
+    } else {
+      result.push({
+        type: 'info',
+        icon: '📈',
+        title: 'Tren penjualan belum dapat dinilai',
+        description:
+          'Data transaksi berdasarkan tanggal belum berhasil dimuat dari backend.',
+        action:
+          'Pastikan endpoint /api/dashboard/tren-penjualan aktif.',
+      });
+    }
+
+    // --- Prediksi permintaan ---
+    const forecastWeeks = Array.isArray(revenueForecastData)
+      ? revenueForecastData
+      : [];
+
+    if (forecastWeeks.length > 0) {
+      const totalDemand = forecastWeeks.reduce(
+        (total, item) =>
+          total + (normalizeNumber(item.total_prediksi_demand) ?? 0),
+        0
+      );
+
+      const productCount = Math.max(
+        ...forecastWeeks.map(
+          (item) => normalizeNumber(item.jumlah_produk) ?? 0
+        )
+      );
+
+      result.push({
+        type: 'info',
+        icon: '🔮',
+        title: `Prediksi permintaan tersedia untuk ${forecastWeeks.length} minggu ke depan`,
+        description:
+          `Total prediksi ${formatNumber(totalDemand, 1)} unit dari ${productCount} produk yang memiliki model. ` +
+          `Produk dengan metode heuristik (${dashboardData.activeHeuristicCount} produk aktif) belum memiliki prediksi per minggu.`,
+        action:
+          'Gunakan prediksi sebagai perkiraan kasar dan pantau akurasinya terhadap penjualan aktual.',
+      });
+    } else {
+      result.push({
+        type: 'info',
+        icon: '🔮',
+        title: 'Prediksi permintaan belum tersedia',
+        description:
+          'Data prediksi mingguan belum berhasil dimuat dari backend.',
+        action:
+          'Pastikan endpoint /api/dashboard/forecast-pendapatan aktif.',
+      });
+    }
+
+    // --- Pendapatan ---
+    const totalPendapatan = normalizeNumber(dashboardKpi?.total_pendapatan);
+    const totalForecast = normalizeNumber(
+      dashboardKpi?.total_forecast_pendapatan
+    );
+
+    if (totalPendapatan !== null) {
+      result.push({
+        type: 'info',
+        icon: '💰',
+        title: `Pendapatan historis Rp ${formatNumber(totalPendapatan, 0)}`,
+        description:
+          `Berasal dari ${formatNumber(dashboardKpi?.total_transaksi ?? 0, 0)} transaksi. ` +
+          (totalForecast !== null
+            ? `Estimasi pendapatan periode forecast Rp ${formatNumber(totalForecast, 0)}, dihitung dari prediksi demand dikali harga satuan dan hanya mencakup produk yang memiliki prediksi.`
+            : 'Estimasi pendapatan forecast belum tersedia.'),
+        action:
+          'Bandingkan estimasi dengan realisasi tiap minggu sebelum dipakai untuk perencanaan.',
+      });
+    } else {
+      result.push({
+        type: 'info',
+        icon: '💰',
+        title: 'Pendapatan belum dapat dihitung',
+        description:
+          'Data KPI pendapatan belum berhasil dimuat dari backend.',
+        action:
+          'Pastikan endpoint /api/dashboard/kpi aktif.',
+      });
+    }
 
     return result;
-  }, [dashboardData]);
+  }, [
+    dashboardData,
+    dashboardKpi,
+    trendData,
+    revenueForecastData,
+  ]);
 
   const cardClass =
     'rounded-2xl border border-gray-200 bg-white p-5 shadow-sm';
+
+  const lowReliabilityCount = forecastData.filter(
+    (item) => item.model_terbaik && item.keandalan === 'rendah'
+  ).length;
+
+  const sortedProducts = [
+    ...(Array.isArray(dashboardProducts) ? dashboardProducts : []),
+  ].sort(
+    (a, b) =>
+      (normalizeNumber(b.pendapatan) ?? 0) -
+      (normalizeNumber(a.pendapatan) ?? 0)
+  );
 
   const getInsightClass = (type) => {
     const classes = {
@@ -763,18 +1086,15 @@ const Dashboard = () => {
             </p>
 
             {(() => {
-              const rawScore = normalizeNumber(
-                dashboardKpi?.skor_kesehatan_bisnis
-              );
+              const rawScore = healthInfo.score;
 
               const score =
                 rawScore !== null && rawScore >= 0 && rawScore <= 100
                   ? rawScore
                   : null;
 
-              const label = dashboardKpi?.label_kesehatan_bisnis;
-              const komponen =
-                dashboardKpi?.komponen_skor_kesehatan_bisnis;
+              const label = healthInfo.label;
+              const komponen = healthInfo.komponen;
 
               return (
                 <>
@@ -791,8 +1111,10 @@ const Dashboard = () => {
 
                   <p className="mt-4 text-center text-sm leading-6 text-teal-50">
                     {score === null
-                      ? 'Skor belum tersedia dari backend. Diperlukan rumus penilaian yang transparan dan indikator aktual yang valid.'
-                      : 'Skor dihitung oleh backend berdasarkan indikator bisnis yang tersedia. Periksa komponen penilaian untuk memahami hasilnya.'}
+                      ? 'Skor belum dapat dihitung karena indikator yang tersedia belum cukup.'
+                      : healthInfo.source === 'backend'
+                      ? 'Skor dihitung oleh backend berdasarkan indikator bisnis yang tersedia. Periksa komponen penilaian untuk memahami hasilnya.'
+                      : 'Skor gabungan sementara dari tiga indikator pada data yang terhubung, dengan bobot yang ditampilkan di bawah. Bukan penilaian bisnis menyeluruh.'}
                   </p>
 
                   {Array.isArray(komponen) && komponen.length > 0 && (
@@ -806,11 +1128,18 @@ const Dashboard = () => {
                           key={`${item.nama ?? 'komponen'}-${index}`}
                           className="flex justify-between gap-3 py-1 text-sm"
                         >
-                          <span>{item.nama ?? 'Indikator'}</span>
+                          <span>
+                            {item.nama ?? 'Indikator'}
+                            {item.bobot != null && (
+                              <span className="ml-1 text-xs text-teal-200">
+                                (bobot {item.bobot}%)
+                              </span>
+                            )}
+                          </span>
                           <span className="font-semibold">
                             {item.nilai == null
                               ? 'Belum tersedia'
-                              : formatNumber(item.nilai, 2)}
+                              : formatNumber(item.nilai, 1)}
                           </span>
                         </div>
                       ))}
@@ -837,11 +1166,11 @@ const Dashboard = () => {
               </p>
               <p className="mt-3 text-2xl font-bold">
                 {trendData.length > 0
-                  ? `${trendData.length} periode`
+                  ? `${trendData.length} hari transaksi`
                   : 'Belum tersedia'}
               </p>
               <p className="mt-3 text-sm leading-5 text-gray-500">
-                Jumlah periode pada data tren yang berhasil dimuat.
+                Jumlah tanggal yang memiliki transaksi pada data tren.
               </p>
             </div>
 
@@ -866,16 +1195,15 @@ const Dashboard = () => {
                 Produk dengan Model
               </p>
               <p className="mt-3 text-2xl font-bold">
-                {dashboardKpi?.jumlah_produk_bermodel == null
-                  ? 'Belum tersedia'
-                  : `${formatNumber(
-                      dashboardKpi.jumlah_produk_bermodel,
-                      0
-                    )} produk`}
+                {dashboardData.activeCount > 0
+                  ? `${dashboardData.activeModeledCount} dari ${dashboardData.activeCount} produk aktif`
+                  : 'Belum tersedia'}
               </p>
               <p className="mt-3 text-sm leading-5 text-gray-500">
-                Cakupan pemodelan dari KPI backend, bukan indikator
-                bahwa semua model memiliki akurasi tinggi.
+                Produk aktif yang memiliki model peramalan.{' '}
+                {dashboardData.activeHeuristicCount} produk aktif memakai
+                metode heuristik. Ini cakupan pemodelan, bukan ukuran
+                akurasi.
               </p>
             </div>
 
@@ -947,6 +1275,12 @@ const Dashboard = () => {
                       0
                     )}`}
               </p>
+              {forecastView.maxWeeks > 0 && (
+                <p className="mt-2 text-xs text-gray-500">
+                  Total {forecastView.maxWeeks} minggu ke depan. Atur
+                  horizon di bagian Forecast Pendapatan.
+                </p>
+              )}
             </div>
 
             <div className={cardClass}>
@@ -960,7 +1294,9 @@ const Dashboard = () => {
                 )}
               </p>
               <p className="mt-2 text-xs text-gray-500">
-                {operationalScore?.status === 'berhasil_dihitung'
+                {['berhasil', 'berhasil_dihitung'].includes(
+                  operationalScore?.status
+                )
                   ? 'Rasio demand terhadap stok masuk, bukan skor kesehatan bisnis menyeluruh.'
                   : 'Belum dapat dihitung dari data yang tersedia.'}
               </p>
@@ -982,9 +1318,15 @@ const Dashboard = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={trendData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="tanggal" tick={{ fontSize: 11 }} />
+                  <XAxis
+                    dataKey="tanggal"
+                    tick={{ fontSize: 11 }}
+                    minTickGap={40}
+                  />
                   <YAxis />
-                  <Tooltip formatter={(value) => formatNumber(value, 0)} />
+                  <Tooltip
+                    formatter={(value) => `Rp ${formatNumber(value, 0)}`}
+                  />
                   <Legend />
                   <Bar
                     dataKey="pendapatan"
@@ -1003,36 +1345,196 @@ const Dashboard = () => {
 
         {/* FORECAST PENDAPATAN */}
         <section className={cardClass}>
-          <h2 className="text-xl font-bold text-gray-900">
-            Forecast Pendapatan
-          </h2>
-          <p className="mb-5 mt-1 text-sm text-gray-500">
-            Estimasi pendapatan untuk periode forecast yang tersedia.
-          </p>
-
-          {revenueForecastData.length > 0 ? (
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={revenueForecastData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="tanggal" tick={{ fontSize: 11 }} />
-                  <YAxis />
-                  <Tooltip
-                    formatter={(value) => `Rp ${formatNumber(value, 0)}`}
-                  />
-                  <Legend />
-                  <Bar
-                    dataKey="forecast_pendapatan"
-                    name="Prediksi Pendapatan"
-                    fill="#7c3aed"
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">
+                Forecast Pendapatan
+              </h2>
+              <p className="mt-1 text-sm text-gray-500">
+                Estimasi pendapatan dari prediksi demand dikali harga
+                satuan, untuk horizon yang Anda pilih.
+              </p>
             </div>
+
+            {forecastView.maxWeeks > 0 && (
+              <div className="shrink-0">
+                <p
+                  id="horizon-label"
+                  className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500"
+                >
+                  Horizon forecast
+                </p>
+
+                <div
+                  role="radiogroup"
+                  aria-labelledby="horizon-label"
+                  className="inline-flex rounded-xl border border-gray-200 bg-gray-50 p-1"
+                >
+                  {Array.from(
+                    { length: forecastView.maxWeeks },
+                    (_, index) => index + 1
+                  ).map((weeks) => {
+                    const selected = forecastView.horizon === weeks;
+
+                    return (
+                      <button
+                        key={weeks}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        onClick={() => setForecastHorizon(weeks)}
+                        className={`rounded-lg px-3.5 py-1.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 ${
+                          selected
+                            ? 'bg-purple-600 text-white shadow-sm'
+                            : 'text-gray-600 hover:bg-white hover:text-gray-900'
+                        }`}
+                      >
+                        {weeks} minggu
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {forecastView.rows.length > 0 ? (
+            <>
+              <p className="mt-4 text-sm text-gray-600">
+                Periode: <strong>{forecastView.periodLabel}</strong>
+              </p>
+
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-xl bg-purple-50 p-4">
+                  <p className="text-xs font-medium text-purple-700">
+                    Total estimasi pendapatan
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-purple-900">
+                    Rp {formatNumber(forecastView.totalRevenue, 0)}
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-gray-50 p-4">
+                  <p className="text-xs font-medium text-gray-500">
+                    Rata-rata per minggu
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-gray-900">
+                    Rp {formatNumber(forecastView.averageRevenue, 0)}
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-gray-50 p-4">
+                  <p className="text-xs font-medium text-gray-500">
+                    Total prediksi demand
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-gray-900">
+                    {formatNumber(forecastView.totalDemand, 1)} unit
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-gray-50 p-4">
+                  <p className="text-xs font-medium text-gray-500">
+                    Produk dengan prediksi
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-gray-900">
+                    {forecastView.productCount} produk
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 h-96">
+                <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart
+                    data={forecastView.rows}
+                    margin={{ top: 24, right: 16, left: 8, bottom: 8 }}
+                    >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="tanggalLabel" tick={{ fontSize: 12 }} />
+                    <YAxis
+                        tick={{ fontSize: 11 }}
+                        domain={[0, 'auto']}
+                        width={56}
+                        tickFormatter={(value) =>
+                        new Intl.NumberFormat('id-ID', {
+                            notation: 'compact',
+                            maximumFractionDigits: 1,
+                        }).format(value)
+                        }
+                    />
+                    <Tooltip
+                        cursor={{ fill: 'rgba(124, 58, 237, 0.08)' }}
+                        content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const row = payload[0].payload;
+
+                        return (
+                            <div className="rounded-lg border border-gray-200 bg-white p-3 text-sm shadow-md">
+                            <p className="font-semibold text-gray-900">
+                                Minggu ke-{row.minggu_ke}
+                            </p>
+                            <p className="mb-2 text-xs text-gray-500">{row.rentang}</p>
+                            <p className="text-purple-700">
+                                Kumulatif: <strong>Rp {formatNumber(row.kumulatif, 0)}</strong>
+                            </p>
+                            <p className="text-gray-600">
+                                Minggu ini: Rp {formatNumber(row.pendapatan, 0)}
+                            </p>
+                            </div>
+                        );
+                        }}
+                    />
+                    <Legend />
+
+                    <Bar
+                        dataKey="kumulatif"
+                        name="Estimasi kumulatif"
+                        fill="#7c3aed"
+                        radius={[6, 6, 0, 0]}
+                        maxBarSize={80}
+                    >
+                        <LabelList
+                        dataKey="kumulatif"
+                        position="insideTop"
+                        formatter={(value) =>
+                            new Intl.NumberFormat('id-ID', {
+                            notation: 'compact',
+                            maximumFractionDigits: 1,
+                            }).format(value)
+                        }
+                        style={{ fontSize: 12, fontWeight: 600, fill: '#ffffff' }}
+                        />
+                    </Bar>
+
+                    <Line
+                        type="monotone"
+                        dataKey="kumulatif"
+                        name="Garis kumulatif"
+                        stroke="#0f766e"
+                        strokeWidth={3}
+                        dot={{ r: 5, fill: '#ffffff', stroke: '#0f766e', strokeWidth: 2 }}
+                        activeDot={{ r: 7 }}
+                    />
+                    </ComposedChart>
+                </ResponsiveContainer>
+                </div>
+
+              <p className="mt-4 text-xs leading-5 text-gray-500">
+                Ini estimasi, bukan pendapatan aktual. Hanya mencakup{' '}
+                {forecastView.productCount} produk yang memiliki prediksi
+                model; produk dengan metode heuristik dan produk tidak
+                aktif tidak termasuk, jadi totalnya lebih rendah dari
+                pendapatan sebenarnya.{' '}
+                {lowReliabilityCount > 0 &&
+                  `${lowReliabilityCount} produk berkeandalan rendah. `}
+                Gunakan sebagai perkiraan kasar. Horizon maksimum{' '}
+                {forecastView.maxWeeks} minggu sesuai data prediksi yang
+                tersedia.
+              </p>
+            </>
           ) : (
-            <p className="rounded-xl bg-gray-50 p-6 text-sm text-gray-500">
-              Data forecast pendapatan belum tersedia.
-              Pastikan data harga jual dan prediksi kuantitas tersedia.
+            <p className="mt-5 rounded-xl bg-gray-50 p-6 text-sm text-gray-500">
+              Data forecast pendapatan belum tersedia. Pastikan
+              forecast_kedepan.csv dan harga satuan produk tersedia.
             </p>
           )}
         </section>
@@ -1044,7 +1546,7 @@ const Dashboard = () => {
           </h2>
 
           <div className="mt-5 overflow-x-auto">
-            {dashboardProducts.length > 0 ? (
+            {sortedProducts.length > 0 ? (
               <table className="min-w-full text-left text-sm">
                 <thead className="bg-gray-50 text-xs uppercase text-gray-500">
                   <tr>
@@ -1054,7 +1556,7 @@ const Dashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {dashboardProducts.map((item, index) => (
+                  {sortedProducts.map((item, index) => (
                     <tr
                       key={`${item.nama_produk ?? item.kode_produk ?? 'produk'}-${index}`}
                       className="hover:bg-gray-50"
