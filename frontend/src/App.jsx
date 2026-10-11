@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import Dashboard from './components/Dashboard';
 import ModelPerformance from './components/ModelPerformance';
 import InventoryTable from './components/InventoryTable';
+import LaboratoriumPrediksi from './components/LaboratoriumPrediksi';
 
 // Menu navbar. `id` dipakai sebagai activeTab.
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'data', label: 'Data Inventaris' },
   { id: 'mlops', label: 'Pemantauan Model' },
+  { id: 'lab', label: 'Laboratorium Prediksi' },
 ];
 
 const NAV_FONT = {
@@ -16,30 +18,11 @@ const NAV_FONT = {
 };
 
 const BrandIcon = () => (
-  <svg
-    viewBox="0 0 40 40"
-    className="h-10 w-10 shrink-0"
-    role="img"
-    aria-label="Logo FarmSight"
-  >
-    <defs>
-      <linearGradient id="fs-brand" x1="0" y1="1" x2="1" y2="0">
-        <stop offset="0" stopColor="#0f766e" />
-        <stop offset="1" stopColor="#4ade80" />
-      </linearGradient>
-    </defs>
-    <rect width="40" height="40" rx="12" fill="url(#fs-brand)" />
-    {/* Tiga batang data */}
-    <rect x="9" y="22" width="5" height="9" rx="1.5" fill="white" opacity="0.85" />
-    <rect x="17.5" y="17" width="5" height="14" rx="1.5" fill="white" opacity="0.9" />
-    <rect x="26" y="12" width="5" height="19" rx="1.5" fill="white" />
-    {/* Daun */}
-    <path
-      d="M10 16c0-5 4-8 10-8-.3 5.7-3.7 9-10 8z"
-      fill="white"
-      opacity="0.95"
-    />
-  </svg>
+  <img
+    src="/logo.png"
+    alt="Logo FarmSight"
+    className="h-10 w-10 shrink-0 object-contain"
+  />
 );
 
 function App() {
@@ -134,6 +117,7 @@ function App() {
         {activeTab === 'dashboard' && <Dashboard />}
         {activeTab === 'data' && <InventoryTable />}
         {activeTab === 'mlops' && <ModelPerformance />}
+        {activeTab === 'lab' && <LaboratoriumPrediksi />}
       </main>
     </div>
   );

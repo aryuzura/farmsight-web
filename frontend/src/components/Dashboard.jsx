@@ -200,6 +200,8 @@ const Dashboard = () => {
   const [inventoryData, setInventoryData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [searchRingkasanProduk, setSearchRingkasanProduk] = useState('');
+  const [searchProdukPerhatian, setSearchProdukPerhatian] = useState('');
 
   // State untuk data dashboard tambahan
   const [dashboardKpi, setDashboardKpi] = useState(null);
@@ -996,6 +998,60 @@ const Dashboard = () => {
       (normalizeNumber(a.pendapatan) ?? 0)
   );
 
+  
+  // Filter pencarian pada tabel Ringkasan Penjualan Produk.
+  const filteredSortedProducts = sortedProducts.filter((item) => {
+    const keyword = searchRingkasanProduk.trim().toLowerCase();
+
+    // Jika kolom pencarian kosong, tampilkan seluruh produk.
+    if (!keyword) return true;
+
+    const nama = String(
+      item.nama_produk ?? item.nama ?? ''
+    ).toLowerCase();
+
+    const kode = String(
+      item.kode_produk ?? item.produk ?? ''
+    ).toLowerCase();
+
+    return nama.includes(keyword) || kode.includes(keyword);
+  });
+
+  // Filter pencarian pada tabel Produk yang Perlu Diperhatikan.
+  const filteredAttentionProducts = dashboardData.products
+    .filter(
+      (item) =>
+        item.stok_tercatat !== null ||
+        item.ROP !== null ||
+        item.Safety_Stock !== null ||
+        !item.model_terbaik
+    )
+    .filter((item) => {
+      const keyword = searchProdukPerhatian.trim().toLowerCase();
+
+      // Jika kolom pencarian kosong, tampilkan seluruh produk.
+      if (!keyword) return true;
+
+      const nama = String(item.nama_produk ?? '').toLowerCase();
+      const kode = String(item.kode_produk ?? '').toLowerCase();
+
+      return nama.includes(keyword) || kode.includes(keyword);
+    })
+    .sort((a, b) => {
+      const aRisk =
+        a.stok_tercatat !== null &&
+        a.ROP !== null &&
+        a.stok_tercatat <= a.ROP;
+
+      const bRisk =
+        b.stok_tercatat !== null &&
+        b.ROP !== null &&
+        b.stok_tercatat <= b.ROP;
+
+      return Number(bRisk) - Number(aRisk);
+    });
+
+
   const getInsightClass = (type) => {
     const classes = {
       danger: 'border-red-200 bg-red-50',
@@ -1539,173 +1595,98 @@ const Dashboard = () => {
           )}
         </section>
 
+        
         {/* RINGKASAN PRODUK DARI CSV */}
         <section className={cardClass}>
-          <h2 className="text-xl font-bold text-gray-900">
-            Ringkasan Penjualan Produk
-          </h2>
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+            <div>
+            <h2 className="text-xl font-bold text-gray-900">
+                Ringkasan Penjualan Produk
+            </h2>
+            <p className="mt-1 text-sm text-gray-500">
+                Cari produk dan gulir tabel tanpa memperpanjang halaman.
+            </p>
+            </div>
 
-          <div className="mt-5 overflow-x-auto">
-            {sortedProducts.length > 0 ? (
-              <table className="min-w-full text-left text-sm">
-                <thead className="bg-gray-50 text-xs uppercase text-gray-500">
-                  <tr>
-                    <th className="px-4 py-3">Produk</th>
-                    <th className="px-4 py-3 text-right">Unit Terjual</th>
-                    <th className="px-4 py-3 text-right">Pendapatan</th>
-                  </tr>
+            <span className="text-sm text-gray-500">
+            {filteredSortedProducts.length} produk
+            </span>
+        </div>
+
+        <div className="mt-4">
+            <input
+            type="text"
+            value={searchRingkasanProduk}
+            onChange={(e) => setSearchRingkasanProduk(e.target.value)}
+            placeholder="Cari nama atau kode produk..."
+            aria-label="Cari nama atau kode produk pada ringkasan penjualan"
+            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+            />
+        </div>
+
+        <div className="mt-4 overflow-hidden rounded-xl border border-gray-200">
+            <div className="max-h-[360px] overflow-auto">
+            <table className="w-full min-w-[600px] text-left text-sm">
+                <thead className="sticky top-0 z-10 bg-gray-50 text-xs uppercase text-gray-500 shadow-sm">
+                <tr>
+                    <th className="whitespace-nowrap px-4 py-3">Produk</th>
+                    <th className="whitespace-nowrap px-4 py-3 text-right">
+                    Unit Terjual
+                    </th>
+                    <th className="whitespace-nowrap px-4 py-3 text-right">
+                    Pendapatan
+                    </th>
+                </tr>
                 </thead>
+
                 <tbody className="divide-y divide-gray-100">
-                  {sortedProducts.map((item, index) => (
+                {filteredSortedProducts.length > 0 ? (
+                    filteredSortedProducts.map((item, index) => (
                     <tr
-                      key={`${item.nama_produk ?? item.kode_produk ?? 'produk'}-${index}`}
-                      className="hover:bg-gray-50"
+                        key={`${item.nama_produk ?? item.kode_produk ?? 'produk'}-${index}`}
+                        className="hover:bg-gray-50"
                     >
-                      <td className="px-4 py-3 font-medium">
+                        <td className="whitespace-nowrap px-4 py-3 font-medium">
                         {item.nama_produk ??
-                          item.nama ??
-                          item.kode_produk ??
-                          '—'}
-                      </td>
-                      <td className="px-4 py-3 text-right">
+                            item.nama ??
+                            item.kode_produk ??
+                            '—'}
+                        </td>
+
+                        <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">
                         {item.unit_terjual == null
-                          ? '—'
-                          : formatNumber(item.unit_terjual, 0)}
-                      </td>
-                      <td className="px-4 py-3 text-right">
+                            ? '—'
+                            : formatNumber(item.unit_terjual, 0)}
+                        </td>
+
+                        <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">
                         {item.pendapatan == null
-                          ? '—'
-                          : `Rp ${formatNumber(item.pendapatan, 0)}`}
-                      </td>
+                            ? '—'
+                            : `Rp ${formatNumber(item.pendapatan, 0)}`}
+                        </td>
                     </tr>
-                  ))}
+                    ))
+                ) : (
+                    <tr>
+                    <td
+                        colSpan={3}
+                        className="px-4 py-8 text-center text-gray-500"
+                    >
+                        Tidak ada produk yang cocok dengan pencarian.
+                    </td>
+                    </tr>
+                )}
                 </tbody>
-              </table>
-            ) : (
-              <p className="rounded-xl bg-gray-50 p-6 text-sm text-gray-500">
-                Data produk belum tersedia.
-              </p>
-            )}
-          </div>
+            </table>
+            </div>
+        </div>
+
+        <p className="mt-2 text-xs text-gray-400">
+            Gulir ke bawah untuk melihat baris lainnya. Geser ke samping jika
+            tabel melebihi lebar layar.
+        </p>
         </section>
 
-        {/* SUMMARY CARDS */}
-        <section>
-          <h2 className="mb-4 text-xl font-bold text-gray-900">
-            Ringkasan Pemodelan dan Inventaris
-          </h2>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <div className={cardClass}>
-              <p className="text-sm text-gray-500">Produk dalam Respons Forecast</p>
-              <p className="mt-2 text-3xl font-bold">
-                {dashboardData.products.length}
-              </p>
-            </div>
-
-            <div className={cardClass}>
-              <p className="text-sm text-gray-500">Model Tersedia</p>
-              <p className="mt-2 text-3xl font-bold text-teal-700">
-                {dashboardData.modeledCount}
-                <span className="ml-1 text-base text-gray-400">
-                  / {dashboardData.products.length}
-                </span>
-              </p>
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-100">
-                <div
-                  className="h-full rounded-full bg-teal-600"
-                  style={{
-                    width: `${
-                      dashboardData.products.length
-                        ? (dashboardData.modeledCount /
-                            dashboardData.products.length) *
-                          100
-                        : 0
-                    }%`,
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className={cardClass}>
-              <p className="text-sm text-gray-500">
-                Produk dengan Catatan Stok
-              </p>
-              <p className="mt-2 text-3xl font-bold text-blue-700">
-                {dashboardData.matchedInventoryCount}
-              </p>
-              <p className="mt-2 text-xs text-gray-400">
-                Kode produk cocok dengan data forecasting
-              </p>
-            </div>
-
-            <div className={cardClass}>
-              <p className="text-sm text-gray-500">Evaluasi RMSE Tersedia</p>
-              <p className="mt-2 text-3xl font-bold text-purple-700">
-                {dashboardData.rmseCount}
-              </p>
-              <p className="mt-2 text-xs text-gray-400">
-                Produk memiliki nilai RMSE
-              </p>
-            </div>
-
-            <div className={cardClass}>
-              <p className="text-sm text-gray-500">Total Barang Masuk</p>
-              <p className="mt-2 text-3xl font-bold text-blue-700">
-                {formatNumber(dashboardData.totalBarangMasuk, 0)}
-              </p>
-              <p className="mt-2 text-xs text-gray-400">
-                Akumulasi jumlah pada seluruh catatan siklus
-              </p>
-            </div>
-
-            <div className={cardClass}>
-              <p className="text-sm text-gray-500">Total Permintaan Aktual</p>
-              <p className="mt-2 text-3xl font-bold text-teal-700">
-                {formatNumber(dashboardData.totalDemandAktual, 0)}
-              </p>
-              <p className="mt-2 text-xs text-gray-400">
-                Akumulasi demand pada catatan siklus
-              </p>
-            </div>
-
-            <div className={cardClass}>
-              <p className="text-sm text-gray-500">
-                Rasio Pemakaian Keseluruhan
-              </p>
-              <p className="mt-2 text-3xl font-bold text-purple-700">
-                {dashboardData.rasioPemakaianKeseluruhan === null
-                  ? 'Belum tersedia'
-                  : `${formatNumber(
-                      dashboardData.rasioPemakaianKeseluruhan * 100,
-                      2
-                    )}%`}
-              </p>
-              <p className="mt-2 text-xs text-gray-400">
-                Total demand dibagi total barang masuk
-              </p>
-            </div>
-
-            <div className={cardClass}>
-              <p className="text-sm text-gray-500">
-                Siklus dengan Ketidaksesuaian
-              </p>
-              <p className="mt-2 text-3xl font-bold text-amber-700">
-                {dashboardData.siklusTidakCocok}
-              </p>
-              <p className="mt-2 text-xs text-gray-400">
-                Catatan dengan flag siklus tidak cocok
-              </p>
-            </div>
-          </div>
-
-          <p className="mt-3 text-xs leading-5 text-gray-500">
-            Total barang masuk dan demand merupakan akumulasi catatan siklus,
-            bukan jumlah transaksi penjualan atau pendapatan. Total sisa stok
-            siklus tidak ditampilkan sebagai stok saat ini karena catatan
-            antar-siklus tidak boleh dianggap sebagai saldo berjalan.
-          </p>
-        </section>
 
         {/* INSIGHTS */}
         <section>
@@ -1792,130 +1773,156 @@ const Dashboard = () => {
           )}
         </section>
 
-        {/* PRODUCTS TABLE */}
-        <section className={cardClass}>
-          <h2 className="text-xl font-bold text-gray-900">
-            Produk yang Perlu Diperhatikan
-          </h2>
-          <p className="mb-5 mt-1 text-sm text-gray-500">
-            Stok menggunakan catatan siklus terbaru per produk.
-          </p>
+        
+            {/* PRODUCTS TABLE */}
+            <section className={cardClass}>
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                <div>
+                <h2 className="text-xl font-bold text-gray-900">
+                    Produk yang Perlu Diperhatikan
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                    Stok menggunakan catatan siklus terbaru per produk.
+                </p>
+                </div>
 
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="bg-gray-50 text-xs uppercase text-gray-500">
-                <tr>
-                  <th className="px-4 py-3">Kode</th>
-                  <th className="px-4 py-3">Nama Produk</th>
-                  <th className="px-4 py-3">Model</th>
-                  <th className="px-4 py-3 text-right">Catatan Stok</th>
-                  <th className="px-4 py-3 text-right">Safety Stock</th>
-                  <th className="px-4 py-3 text-right">ROP</th>
-                  <th className="px-4 py-3">Status</th>
-                </tr>
-              </thead>
+                <span className="text-sm text-gray-500">
+                {filteredAttentionProducts.length} produk
+                </span>
+            </div>
 
-              <tbody className="divide-y divide-gray-100">
-                {dashboardData.products
-                  .filter(
-                    (item) =>
-                      item.stok_tercatat !== null ||
-                      item.ROP !== null ||
-                      item.Safety_Stock !== null ||
-                      !item.model_terbaik
-                  )
-                  .sort((a, b) => {
-                    const aRisk =
-                      a.stok_tercatat !== null &&
-                      a.ROP !== null &&
-                      a.stok_tercatat <= a.ROP;
+            <div className="mt-4">
+                <input
+                type="text"
+                value={searchProdukPerhatian}
+                onChange={(e) => setSearchProdukPerhatian(e.target.value)}
+                placeholder="Cari nama atau kode produk..."
+                aria-label="Cari nama atau kode produk yang perlu diperhatikan"
+                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+                />
+            </div>
 
-                    const bRisk =
-                      b.stok_tercatat !== null &&
-                      b.ROP !== null &&
-                      b.stok_tercatat <= b.ROP;
+            <div className="mt-4 overflow-hidden rounded-xl border border-gray-200">
+                <div className="max-h-[420px] overflow-auto">
+                <table className="w-full min-w-[1050px] text-left text-sm">
+                    <thead className="sticky top-0 z-10 bg-gray-50 text-xs uppercase text-gray-500 shadow-sm">
+                    <tr>
+                        <th className="whitespace-nowrap px-4 py-3">Kode</th>
+                        <th className="whitespace-nowrap px-4 py-3">Nama Produk</th>
+                        <th className="whitespace-nowrap px-4 py-3">Model</th>
+                        <th className="whitespace-nowrap px-4 py-3 text-right">
+                        Catatan Stok
+                        </th>
+                        <th className="whitespace-nowrap px-4 py-3 text-right">
+                        Safety Stock
+                        </th>
+                        <th className="whitespace-nowrap px-4 py-3 text-right">
+                        ROP
+                        </th>
+                        <th className="whitespace-nowrap px-4 py-3">Status</th>
+                    </tr>
+                    </thead>
 
-                    return Number(bRisk) - Number(aRisk);
-                  })
-                  .map((item, index) => {
-                    let status = 'Parameter tersedia';
-                    let statusClass = 'bg-blue-50 text-blue-700';
+                    <tbody className="divide-y divide-gray-100">
+                    {filteredAttentionProducts.length > 0 ? (
+                        filteredAttentionProducts.map((item, index) => {
+                        let status = 'Parameter tersedia';
+                        let statusClass = 'bg-blue-50 text-blue-700';
 
-                    if (item.status_produk === 'tidak_aktif_terbaru') {
-                      status = 'Tidak aktif';
-                      statusClass = 'bg-gray-100 text-gray-600';
-                    } else if (
-                      item.stok_tercatat !== null &&
-                      item.ROP !== null &&
-                      item.stok_tercatat <= item.ROP
-                    ) {
-                      status = 'Perlu perhatian';
-                      statusClass = 'bg-red-50 text-red-700';
-                    } else if (
-                      !item.model_terbaik &&
-                      item.tier_model === 'heuristik'
-                    ) {
-                      status = 'Metode heuristik';
-                      statusClass = 'bg-blue-50 text-blue-700';
-                    } else if (!item.model_terbaik) {
-                      status = 'Belum dimodelkan';
-                      statusClass = 'bg-amber-50 text-amber-700';
-                    } else if (item.ROP === null) {
-                      status = 'ROP belum tersedia';
-                      statusClass = 'bg-amber-50 text-amber-700';
-                    } else if (item.stok_tercatat === null) {
-                      status = 'Catatan stok tidak tersedia';
-                      statusClass = 'bg-gray-100 text-gray-600';
-                    } else {
-                      status = 'Di atas ROP';
-                      statusClass = 'bg-green-50 text-green-700';
-                    }
+                        if (item.status_produk === 'tidak_aktif_terbaru') {
+                            status = 'Tidak aktif';
+                            statusClass = 'bg-gray-100 text-gray-600';
+                        } else if (
+                            item.stok_tercatat !== null &&
+                            item.ROP !== null &&
+                            item.stok_tercatat <= item.ROP
+                        ) {
+                            status = 'Perlu perhatian';
+                            statusClass = 'bg-red-50 text-red-700';
+                        } else if (
+                            !item.model_terbaik &&
+                            item.tier_model === 'heuristik'
+                        ) {
+                            status = 'Metode heuristik';
+                            statusClass = 'bg-blue-50 text-blue-700';
+                        } else if (!item.model_terbaik) {
+                            status = 'Belum dimodelkan';
+                            statusClass = 'bg-amber-50 text-amber-700';
+                        } else if (item.ROP === null) {
+                            status = 'ROP belum tersedia';
+                            statusClass = 'bg-amber-50 text-amber-700';
+                        } else if (item.stok_tercatat === null) {
+                            status = 'Catatan stok tidak tersedia';
+                            statusClass = 'bg-gray-100 text-gray-600';
+                        } else {
+                            status = 'Di atas ROP';
+                            statusClass = 'bg-green-50 text-green-700';
+                        }
 
-                    return (
-                      <tr
-                        key={`${item.kode_produk}-${index}`}
-                        className="hover:bg-gray-50"
-                      >
-                        <td className="whitespace-nowrap px-4 py-4 font-semibold">
-                          {item.kode_produk}
+                        return (
+                            <tr
+                            key={`${item.kode_produk}-${index}`}
+                            className="hover:bg-gray-50"
+                            >
+                            <td className="whitespace-nowrap px-4 py-3 font-semibold">
+                                {item.kode_produk}
+                            </td>
+
+                            <td className="whitespace-nowrap px-4 py-3">
+                                {item.nama_produk}
+                            </td>
+
+                            <td className="whitespace-nowrap px-4 py-3">
+                                {item.model_terbaik
+                                ? String(item.model_terbaik).toUpperCase()
+                                : 'Belum tersedia'}
+                            </td>
+
+                            <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">
+                                {formatNumber(item.stok_tercatat)}
+                            </td>
+
+                            <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">
+                                {formatNumber(item.Safety_Stock)}
+                            </td>
+
+                            <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">
+                                {formatNumber(item.ROP)}
+                            </td>
+
+                            <td className="whitespace-nowrap px-4 py-3">
+                                <span
+                                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass}`}
+                                >
+                                {status}
+                                </span>
+                            </td>
+                            </tr>
+                        );
+                        })
+                    ) : (
+                        <tr>
+                        <td
+                            colSpan={7}
+                            className="px-4 py-8 text-center text-gray-500"
+                        >
+                            Tidak ada produk yang cocok dengan pencarian.
                         </td>
-                        <td className="px-4 py-4">{item.nama_produk}</td>
-                        <td className="px-4 py-4">
-                          {item.model_terbaik
-                            ? String(item.model_terbaik).toUpperCase()
-                            : 'Belum tersedia'}
-                        </td>
-                        <td className="px-4 py-4 text-right">
-                          {formatNumber(item.stok_tercatat)}
-                        </td>
-                        <td className="px-4 py-4 text-right">
-                          {formatNumber(item.Safety_Stock)}
-                        </td>
-                        <td className="px-4 py-4 text-right">
-                          {formatNumber(item.ROP)}
-                        </td>
-                        <td className="px-4 py-4">
-                          <span
-                            className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass}`}
-                          >
-                            {status}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-              </tbody>
-            </table>
-          </div>
+                        </tr>
+                    )}
+                    </tbody>
+                </table>
+                </div>
+            </div>
 
-          <p className="mt-4 text-xs leading-5 text-gray-400">
-            Catatan stok berasal dari siklus dengan tanggal akhir paling
-            baru yang tersedia. Jika sisa stok dicatat per siklus dan
-            bukan saldo berjalan, angka ini tidak boleh dianggap sebagai
-            stok aktual saat ini. Verifikasi stok fisik sebelum
-            mengambil keputusan pengadaan.
-          </p>
-        </section>
+            <p className="mt-3 text-xs leading-5 text-gray-400">
+                Catatan stok berasal dari siklus dengan tanggal akhir paling baru
+                yang tersedia. Jika sisa stok dicatat per siklus dan bukan saldo
+                berjalan, angka ini tidak boleh dianggap sebagai stok aktual saat
+                ini. Verifikasi stok fisik sebelum mengambil keputusan pengadaan.
+            </p>
+            </section>
+
 
         <footer className="border-t border-gray-200 py-4 text-center text-xs text-gray-400">
           FarmSight · Demand Forecasting &amp; Inventory Optimization

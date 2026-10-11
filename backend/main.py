@@ -1450,3 +1450,138 @@ def get_dashboard_skor_operasional():
             detail=f"Gagal menghitung indikator operasional: {str(e)}"
 
         )
+
+
+
+
+# ============================================================
+# LABORATORIUM PREDIKSI
+# ============================================================
+
+@app.get("/api/lab/data")
+def get_lab_data():
+    """
+    Satu paket data untuk halaman Laboratorium Prediksi:
+    - produk: master + parameter model/stok per produk
+    - riwayat: demand mingguan operasional (semua produk)
+    - forecast: prediksi model per produk per minggu
+    """
+    try:
+        produk = normalize_code(read_csv_data("dim_produk.csv"))
+        mingguan = normalize_code(read_csv_data("fact_demand_mingguan.csv"))
+        forecast = normalize_code(read_csv_data("forecast_kedepan.csv"))
+        stok = normalize_code(read_csv_data("safety_stock_rop.csv"))
+        model = normalize_code(read_csv_data("model_terbaik.csv"))
+
+        # ---------- Riwayat mingguan (hanya minggu operasional) ----------
+        if "status_periode" in mingguan.columns:
+            mingguan = mingguan[
+                mingguan["status_periode"] == "operasional"
+            ].copy()
+
+        for col in ["y", "pendapatan", "n_transaksi", "ada_bazaar"]:
+            mingguan = numeric_column(mingguan, col)
+
+        mingguan["minggu_mulai"] = pd.to_datetime(
+            mingguan["minggu_mulai"], errors="coerce"
+        )
+        mingguan = mingguan.dropna(subset=["minggu_mulai", "y"])
+        mingguan["minggu_mulai"] = (
+            mingguan["minggu_mulai"].dt.strftime("%Y-%m-%d")
+        )
+
+        riwayat = mingguan[
+            [
+                "kode_produk",
+                "minggu_mulai",
+                "y",
+                "pendapatan",
+                "n_transaksi",
+                "ada_bazaar",
+            ]
+        ].rename(columns={"y": "demand"})
+
+        # ---------- Master produk + parameter model/stok ----------
+        produk = numeric_column(produk, "harga_satuan")
+        kolom_produk = [
+            c for c in [
+                "kode_produk",
+                "nama_produk",
+                "kategori",
+                "satuan_produk",
+                "harga_satuan",
+                "status_produk",
+            ]
+            if c in produk.columns
+        ]
+        master = (
+            produk[kolom_produk]
+            .dropna(subset=["kode_produk"])
+            .drop_duplicates(subset=["kode_produk"])
+            .copy()
+        )
+
+        kolom_stok = [
+            c for c in [
+                "kode_produk",
+                "d_rata_minggu",
+                "sigma_dipakai",
+                "lead_time_minggu",
+                "safety_stock",
+                "reorder_point",
+            ]
+            if c in stok.columns
+        ]
+        if len(kolom_stok) > 1:
+            master = master.merge(
+                stok[kolom_stok].drop_duplicates(subset=["kode_produk"]),
+                on="kode_produk",
+                how="left",
+                validate="one_to_one",
+            )
+
+        kolom_model = [
+            c for c in [
+                "kode_produk",
+                "model_terbaik",
+                "rmse",
+                "mase",
+                "keandalan",
+                "catatan_keandalan",
+            ]
+            if c in model.columns
+        ]
+        if len(kolom_model) > 1:
+            master = master.merge(
+                model[kolom_model].drop_duplicates(subset=["kode_produk"]),
+                on="kode_produk",
+                how="left",
+                validate="one_to_one",
+            )
+
+        # ---------- Forecast ----------
+        forecast = numeric_column(forecast, "prediksi")
+        forecast["prediksi"] = forecast["prediksi"].clip(lower=0).round(4)
+        forecast["minggu_mulai"] = pd.to_datetime(
+            forecast["minggu_mulai"], errors="coerce"
+        ).dt.strftime("%Y-%m-%d")
+        forecast = forecast.dropna(subset=["minggu_mulai", "prediksi"])
+        forecast = forecast.sort_values(["kode_produk", "minggu_mulai"])
+
+        return {
+            "status": "berhasil",
+            "produk": clean_records(master),
+            "riwayat": clean_records(riwayat),
+            "forecast": clean_records(
+                forecast[["kode_produk", "minggu_mulai", "prediksi", "metode"]]
+                if "metode" in forecast.columns
+                else forecast[["kode_produk", "minggu_mulai", "prediksi"]]
+            ),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Gagal menyiapkan data laboratorium prediksi: {str(e)}"
+        )
