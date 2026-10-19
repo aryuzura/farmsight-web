@@ -6,34 +6,34 @@ HSP,IQR per produk,31,114.7407407407407
 JGG,IQR per produk,9,53.5008623784982
 KKG,IQR per produk,35,111.32070319132221
 LDB,IQR per produk,16,13.160117268838125
-MDT,IQR per produk,37,76.94228634059951
-MLB,IQR per produk,13,31.381723240124177
+MDT,IQR per produk,38,73.65280431275563
+MLB,IQR per produk,14,40.622074407951125
 PLB,IQR per produk,24,150.7372449017775
 PPK,IQR per produk,8,16.42770851179144
-PSK,IQR per produk,15,60.019848964863165
+PSK,IQR per produk,16,63.64601126985243
 SAW,IQR per produk,25,34.89440067754303
 SLD,IQR per produk,20,28.23800961527322
 SYR,IQR per produk,8,18.490524512136176
 BMG,tidak dievaluasi (< 2 observasi di train),1,
-CKP,relatif terhadap median (pengali gabungan),7,50.19386416684813
+CKP,relatif terhadap median (pengali gabungan),7,51.374866346199326
 CRG,tidak dievaluasi (< 2 observasi di train),1,
 GRG,tidak dievaluasi (< 2 observasi di train),1,
-JHE,relatif terhadap median (pengali gabungan),4,50.19386416684813
+JHE,relatif terhadap median (pengali gabungan),4,51.374866346199326
 KCT,tidak dievaluasi (< 2 observasi di train),1,
 KJG,tidak dievaluasi (< 2 observasi di train),1,
-KMG,relatif terhadap median (pengali gabungan),2,36.25112412050142
-KNK,relatif terhadap median (pengali gabungan),2,16.73128805561604
-KRB,relatif terhadap median (pengali gabungan),7,50.19386416684813
+KMG,relatif terhadap median (pengali gabungan),2,37.104070138921735
+KNK,relatif terhadap median (pengali gabungan),2,17.124955448733107
+KRB,relatif terhadap median (pengali gabungan),7,51.374866346199326
 KRL,tidak dievaluasi (< 2 observasi di train),1,
-KRY,relatif terhadap median (pengali gabungan),3,61.34805620392549
-LBP,relatif terhadap median (pengali gabungan),5,33.46257611123208
+KRY,relatif terhadap median (pengali gabungan),3,62.79150331202139
+LBP,relatif terhadap median (pengali gabungan),5,34.249910897466215
 MNJ,tidak dievaluasi (< 2 observasi di train),1,
-MNM,relatif terhadap median (pengali gabungan),4,30.674028101962744
+MNM,relatif terhadap median (pengali gabungan),4,31.395751656010695
 MNT,tidak dievaluasi (< 2 observasi di train),1,
 PKC,tidak dievaluasi (< 2 observasi di train),1,
-PMJ,relatif terhadap median (pengali gabungan),5,44.61676814830945
+PMJ,relatif terhadap median (pengali gabungan),6,34.249910897466215
 PNP,tidak dievaluasi (< 2 observasi di train),1,
 PYB,tidak dievaluasi (< 2 observasi di train),1,
 RJK,tidak dievaluasi (< 2 observasi di train),1,
-TTL,relatif terhadap median (pengali gabungan),2,52.98241217611747
+TTL,relatif terhadap median (pengali gabungan),2,54.22902558765484
 URE,tidak dievaluasi (< 2 observasi di train),1,

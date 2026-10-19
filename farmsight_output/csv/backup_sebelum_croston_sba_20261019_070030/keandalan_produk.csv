@@ -1,23 +1,23 @@
 kode_produk,nama_produk,status_produk,pola_demand,tier_model,model_terbaik,mae,rmse,mase,keandalan,catatan_keandalan
-MDT,MEDIA TANAM,aktif,lumpy,penuh,arima,2.6082766921701706,3.518796521496456,0.4667949061632962,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.
-KKG,KANGKUNG,aktif,lumpy,penuh,arima,5.202238536494837,8.781514943075452,0.47646670708083555,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.
+MDT,MEDIA TANAM,aktif,lumpy,penuh,arima,2.9247309111219613,4.1072861362419495,0.5288258842988048,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.
+KKG,KANGKUNG,aktif,lumpy,penuh,arima,4.966198525811033,8.603893900123536,0.4594893963133573,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.
 BYM,BAYAM,tidak_aktif_terbaru,intermittent,tidak_aktif,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
 HSP,HASIL PANEN,tidak_aktif_terbaru,lumpy,tidak_aktif,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
 SAW,SAWI,tidak_aktif_terbaru,intermittent,tidak_aktif,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
 PLB,PERMEN LIDAH BUAYA,tidak_aktif_terbaru,lumpy,tidak_aktif,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
 SLD,SELADA,tidak_aktif_terbaru,intermittent,tidak_aktif,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
-LDB,LIDAH BUAYA,aktif,intermittent,penuh,arima,0.7677414139082828,1.670129475469137,0.4077270785727603,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.
-PSK,PISANG KEPOK,aktif,intermittent,penuh,arima,1.3363434261148075,2.4709713821235972,0.35416752003589164,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.
-MLB,MINUMAN LIDAH BUAYA,aktif,intermittent,penuh,croston_sba,5.421235474962156,12.013729814753795,1.5136213007016845,rendah,TIDAK mengalahkan tebakan naive (MASE>=1) -> jangan dijadikan acuan utama; gunakan sebagai indikasi saja.
+PSK,PISANG KEPOK,aktif,lumpy,penuh,arima,1.3420959129159955,2.453062076729842,0.3554740526101826,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.
+LDB,LIDAH BUAYA,aktif,intermittent,penuh,arima,0.7639746504933436,1.6431416963260495,0.41004289150772677,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.
+MLB,MINUMAN LIDAH BUAYA,aktif,intermittent,penuh,croston_sba,5.259148785818852,11.774843111047343,1.4666358585804686,rendah,TIDAK mengalahkan tebakan naive (MASE>=1) -> jangan dijadikan acuan utama; gunakan sebagai indikasi saja.
 BLB,BIBIT LIDAH BUAYA,tidak_aktif_terbaru,intermittent,tidak_aktif,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
 JGG,JAGUNG,tidak_aktif_terbaru,lumpy,tidak_aktif,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
 BSY,BIBIT SAYURAN,tidak_aktif_terbaru,intermittent,tidak_aktif,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
-PPK,PUPUK,aktif,intermittent,ringan,arima,1.7817998008333458,2.993621518779137,1.7817998008333458,rendah,TIDAK mengalahkan tebakan naive (MASE>=1) -> jangan dijadikan acuan utama; gunakan sebagai indikasi saja.
+PPK,PUPUK,aktif,intermittent,ringan,arima,1.923971714389455,3.076268659074729,1.9489583600308764,rendah,TIDAK mengalahkan tebakan naive (MASE>=1) -> jangan dijadikan acuan utama; gunakan sebagai indikasi saja.
 SYR,SAYUR,tidak_aktif_terbaru,intermittent,tidak_aktif,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
 KRB,KERIPIK BAWANG,tidak_aktif_terbaru,intermittent,tidak_aktif,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
-CKP,COKLAT PERMEN,aktif,lumpy,ringan,croston_sba,2.3983530722949067,2.884092529114787,0.4322957389568597,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.
-PMJ,PERMEN JELLY,aktif,intermittent,ringan,arima,0.861124169206806,1.411652199813678,1.308908737194345,rendah,TIDAK mengalahkan tebakan naive (MASE>=1) -> jangan dijadikan acuan utama; gunakan sebagai indikasi saja.
-LBP,LABU PRIDA,aktif,lumpy,ringan,arima,0.4880356779189542,1.4343222088871255,0.422233114604039,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.
+CKP,COKLAT PERMEN,aktif,lumpy,ringan,croston_sba,2.3617879804792348,2.839461058992288,0.4315365692727491,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.
+PMJ,PERMEN JELLY,aktif,intermittent,ringan,arima,0.8365374854045841,1.3684210294305854,1.1928404884472772,rendah,TIDAK mengalahkan tebakan naive (MASE>=1) -> jangan dijadikan acuan utama; gunakan sebagai indikasi saja.
+LBP,LABU PRIDA,aktif,lumpy,ringan,arima,0.47997588276699676,1.4070375730374864,0.4206530208519747,cukup,Mengalahkan tebakan naive di test (MASE<1); data sedikit -> anggap perkiraan kasar.
 JHE,JAHE,aktif,intermittent,heuristik,,,,,heuristik,Tanpa model: rata-rata & std demand mentah.
 MNM,MINUMAN,aktif,lumpy,heuristik,,,,,heuristik,Tanpa model: rata-rata & std demand mentah.
 KRY,KERIPIK BAYAM,aktif,intermittent,heuristik,,,,,heuristik,Tanpa model: rata-rata & std demand mentah.
