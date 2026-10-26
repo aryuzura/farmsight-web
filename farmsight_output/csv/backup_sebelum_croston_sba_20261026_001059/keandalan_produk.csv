@@ -1,0 +1,39 @@
+kode_produk,nama_produk,status_produk,pola_demand,tier_model,model_terbaik,mae,rmse,mase,mase_recent,keandalan,catatan_keandalan
+MDT,MEDIA TANAM,aktif,lumpy,penuh,croston_sba,3.1372327218317797,3.941671555890787,0.5870844859568242,2.330515736217893,rendah,TIDAK mengalahkan tebakan naive (MASE>=1 pada denominator penuh atau periode setelah structural break) -> jangan dijadikan acuan utama; gunakan sebagai indikasi saja.
+KKG,KANGKUNG,aktif,lumpy,penuh,croston_sba,5.947244006706833,8.484332324365043,0.5462904059190935,1.9573208123338943,rendah,TIDAK mengalahkan tebakan naive (MASE>=1 pada denominator penuh atau periode setelah structural break) -> jangan dijadikan acuan utama; gunakan sebagai indikasi saja.
+BYM,BAYAM,tidak_aktif_terbaru,intermittent,tidak_aktif,,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
+HSP,HASIL PANEN,tidak_aktif_terbaru,lumpy,tidak_aktif,,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
+SAW,SAWI,tidak_aktif_terbaru,intermittent,tidak_aktif,,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
+PLB,PERMEN LIDAH BUAYA,tidak_aktif_terbaru,lumpy,tidak_aktif,,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
+SLD,SELADA,tidak_aktif_terbaru,intermittent,tidak_aktif,,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
+PSK,PISANG KEPOK,aktif,lumpy,penuh,croston_sba,1.6978768645076252,2.4782281567016886,0.4405302134938703,1.4014221738793098,rendah,TIDAK mengalahkan tebakan naive (MASE>=1 pada denominator penuh atau periode setelah structural break) -> jangan dijadikan acuan utama; gunakan sebagai indikasi saja.
+LDB,LIDAH BUAYA,aktif,intermittent,penuh,croston_sba,1.0928788535613911,1.6359178873639897,0.6264061721632364,0.963215260765972,sedang,"Mengalahkan tebakan naive di test (MASE<1, juga pada denominator periode setelah structural break bila tersedia), tapi naive pada data lumpy lemah & test hanya beberapa minggu ber-demand -> perkiraan kasar."
+MLB,MINUMAN LIDAH BUAYA,aktif,intermittent,penuh,arima,4.498952869687698,11.314211595675207,1.2292913474921316,1.017154561842436,rendah,TIDAK mengalahkan tebakan naive (MASE>=1 pada denominator penuh atau periode setelah structural break) -> jangan dijadikan acuan utama; gunakan sebagai indikasi saja.
+BLB,BIBIT LIDAH BUAYA,tidak_aktif_terbaru,intermittent,tidak_aktif,,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
+JGG,JAGUNG,tidak_aktif_terbaru,intermittent,tidak_aktif,,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
+BSY,BIBIT SAYURAN,tidak_aktif_terbaru,intermittent,tidak_aktif,,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
+PPK,PUPUK,aktif,intermittent,ringan,arima,2.1241683705944734,3.066171285015853,2.096581768378961,3.068243201969795,rendah,TIDAK mengalahkan tebakan naive (MASE>=1 pada denominator penuh atau periode setelah structural break) -> jangan dijadikan acuan utama; gunakan sebagai indikasi saja.
+SYR,SAYUR,tidak_aktif_terbaru,intermittent,tidak_aktif,,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
+KRB,KERIPIK BAWANG,tidak_aktif_terbaru,intermittent,tidak_aktif,,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
+CKP,COKLAT PERMEN,aktif,lumpy,ringan,croston_sba,2.3617879804792348,2.839461058992288,0.4198734187518639,0.3101337752144449,sedang,"Mengalahkan tebakan naive di test (MASE<1, juga pada denominator periode setelah structural break bila tersedia), tapi naive pada data lumpy lemah & test hanya beberapa minggu ber-demand -> perkiraan kasar."
+PMJ,PERMEN JELLY,aktif,intermittent,ringan,arima,1.0078192396868235,1.4472053862852792,1.3997489440094777,1.87166430227553,rendah,TIDAK mengalahkan tebakan naive (MASE>=1 pada denominator penuh atau periode setelah structural break) -> jangan dijadikan acuan utama; gunakan sebagai indikasi saja.
+LBP,LABU PRIDA,aktif,lumpy,ringan,arima,0.7528936607370529,1.3779846059236884,0.6429204293934384,1.6312695982636145,rendah,TIDAK mengalahkan tebakan naive (MASE>=1 pada denominator penuh atau periode setelah structural break) -> jangan dijadikan acuan utama; gunakan sebagai indikasi saja.
+KNK,KENIKIR,tidak_aktif_terbaru,intermittent,tidak_aktif,,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
+PKC,PAKCOY,tidak_aktif_terbaru,data_tidak_cukup,tidak_aktif,,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
+PNP,PUPUK NPK,tidak_aktif_terbaru,data_tidak_cukup,tidak_aktif,,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
+PYB,PEYEK BAYAM,tidak_aktif_terbaru,data_tidak_cukup,tidak_aktif,,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
+URE,UREA,tidak_aktif_terbaru,data_tidak_cukup,tidak_aktif,,,,,,tidak_aktif,Produk tidak aktif: tidak diprediksi.
+JHE,JAHE,aktif,intermittent,ringan,croston_sba,1.9471004106929384,4.111166170643792,3.2127156776433483,,rendah,"Croston SBA belum mengungguli naive berdasarkan MASE test; gunakan sebagai indikasi, bukan acuan tunggal."
+MNM,MINUMAN,aktif,lumpy,ringan,croston_sba,1.212381632614331,2.4166139703632443,1.731973760877616,,rendah,"Croston SBA belum mengungguli naive berdasarkan MASE test; gunakan sebagai indikasi, bukan acuan tunggal."
+KRY,KERIPIK BAYAM,aktif,intermittent,ringan,croston_sba,1.45146307819885,2.1150386372337504,2.9029261563977,,rendah,"Croston SBA belum mengungguli naive berdasarkan MASE test; gunakan sebagai indikasi, bukan acuan tunggal."
+KMG,KEMANGI,aktif,intermittent,ringan,croston_sba,1.3626430223120458,2.0031510216385087,8.090692944977771,,rendah,"Croston SBA belum mengungguli naive berdasarkan MASE test; gunakan sebagai indikasi, bukan acuan tunggal."
+TTL,TEH BUNGA TELANG,aktif,intermittent,ringan,croston_sba,1.9304380041931057,2.8592887287388447,7.053523476859424,,rendah,"Croston SBA belum mengungguli naive berdasarkan MASE test; gunakan sebagai indikasi, bukan acuan tunggal."
+BMG,BAWANG MERAH GORENG,aktif,data_tidak_cukup,ringan,croston_sba,1.9755181970124094,3.19295230948378,27.092820987598756,,rendah,"Croston SBA belum mengungguli naive berdasarkan MASE test; gunakan sebagai indikasi, bukan acuan tunggal."
+CRG,CIRENG,aktif,data_tidak_cukup,ringan,croston_sba,2.1976199456549916,4.07705404140878,29.82484211960346,,rendah,"Croston SBA belum mengungguli naive berdasarkan MASE test; gunakan sebagai indikasi, bukan acuan tunggal."
+GRG,GORENGAN,aktif,data_tidak_cukup,ringan,croston_sba,2.6669389287876277,8.081450122050548,84.45306607827487,,rendah,"Croston SBA belum mengungguli naive berdasarkan MASE test; gunakan sebagai indikasi, bukan acuan tunggal."
+KJG,KERIPIK JAGUNG GEPREK,aktif,data_tidak_cukup,ringan,croston_sba,1.4327317875692058,2.69423079672191,22.684919969845758,,rendah,"Croston SBA belum mengungguli naive berdasarkan MASE test; gunakan sebagai indikasi, bukan acuan tunggal."
+KCT,KACANG TELOR,aktif,data_tidak_cukup,ringan,croston_sba,1.597918093006831,2.5469812783216192,21.686031262235566,,rendah,"Croston SBA belum mengungguli naive berdasarkan MASE test; gunakan sebagai indikasi, bukan acuan tunggal."
+KRL,KERIPIK LABU,aktif,data_tidak_cukup,ringan,croston_sba,1.572816204034719,2.7063642102745344,37.74758889683326,,rendah,"Croston SBA belum mengungguli naive berdasarkan MASE test; gunakan sebagai indikasi, bukan acuan tunggal."
+MNJ,MINUMAN JERUK,aktif,data_tidak_cukup,ringan,croston_sba,2.2238914089201156,3.6901359166702314,21.1269683847411,,rendah,"Croston SBA belum mengungguli naive berdasarkan MASE test; gunakan sebagai indikasi, bukan acuan tunggal."
+MNT,MINUMAN TIMUN,aktif,data_tidak_cukup,ringan,croston_sba,2.852359835748724,4.593762053838722,24.634016763284432,,rendah,"Croston SBA belum mengungguli naive berdasarkan MASE test; gunakan sebagai indikasi, bukan acuan tunggal."
+RJK,RUJAK KANGKUNG,aktif,data_tidak_cukup,ringan,croston_sba,2.6624068638179783,6.341022165817066,50.585730412541594,,rendah,"Croston SBA belum mengungguli naive berdasarkan MASE test; gunakan sebagai indikasi, bukan acuan tunggal."

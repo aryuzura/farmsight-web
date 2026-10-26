@@ -5,7 +5,7 @@ fact_demand_mingguan,y_log1p,"log1p(y_model). Jika model dilatih pada skala ini,
 fact_demand_mingguan,split,train / test (kronologis; tanggal potong ada di split_info & config.json).
 fact_demand_mingguan,status_periode,"operasional / tidak_tercatat / sebelum_produk_dijual / di_luar_rentang. Hanya ""operasional"" yang dipakai model."
 fact_demand_mingguan,is_outlier / dicap,Outlier terdeteksi / benar-benar dicap (test tidak pernah dicap).
-fact_demand_mingguan,"ada_bazaar, ada_mini_bazaar",Ada event pada minggu tsb. Aman dipakai sebagai regresor (jadwal event diketahui sebelumnya).
+fact_demand_mingguan,ada_event,"Ada bazaar atau mini bazaar (digabung) pada minggu tsb. 1 = ada, 0 = tidak. Aman dipakai sebagai regresor (jadwal event diketahui sebelumnya)."
 fact_demand_mingguan,"stok_masuk, n_batch_stok",Info persediaan. JANGAN dipakai sebagai regresor forecasting (jumlah masuk dipengaruhi demand).
 fact_siklus_stok,demand_aktual_siklus,"= floor(jumlah_produk_masuk / 1,2) (rumus, BUKAN demand terukur). Jangan dipakai sebagai fitur/target; pakai demand_siklus_hitung (dari penjualan nyata)."
 fact_siklus_stok,"sisa_stok, rasio_pemakaian","Berbasis kolom demand_aktual_siklus, yang terdeteksi = floor(jumlah masuk / 1.2) (rumus, bukan demand terukur) -> tidak informatif."

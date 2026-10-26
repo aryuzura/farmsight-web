@@ -1,0 +1,24 @@
+kode_produk,nama_produk,satuan_produk,keandalan,rasio_event,bukti_event,sumber_sigma,d_normal_minggu,d_event_minggu,sigma_biasa,sigma_event,lead_time_minggu,safety_stock_biasa,safety_stock_event,reorder_point_biasa,reorder_point_event,safety_stock_rekomendasi,reorder_point_rekomendasi,ss_baseline_tanpa_event,rop_baseline_tanpa_event,selisih_rop_vs_baseline
+MLB,MINUMAN LIDAH BUAYA,BOTOL,rendah,6.94,lemah,residual test (arima),0.49,3.42,0.64,17.38,0.14,0.4,10.8,0.47,11.29,10.8,11.29,0.4,0.47,10.82
+GRG,GORENGAN,PCS,heuristik,5.0,lemah,std 26 minggu terakhir (heuristik),0.77,3.86,0.0,12.05,0.14,0.0,7.49,0.11,8.04,7.49,8.04,4.98,5.28,2.76
+KKG,KANGKUNG,IKAT,rendah,2.15,cukup,residual test (croston_event),2.26,4.85,2.56,11.75,0.14,1.59,7.3,1.92,8.0,7.3,8.0,2.11,2.59,5.41
+RJK,RUJAK KANGKUNG,PORSI,heuristik,5.0,lemah,std 26 minggu terakhir (heuristik),0.69,3.43,0.0,9.24,0.14,0.0,5.75,0.1,6.24,5.75,6.24,3.88,4.15,2.09
+JHE,JAHE,GR,heuristik,5.0,lemah,std 26 minggu terakhir (heuristik),0.47,2.36,0.0,6.15,0.14,0.0,3.82,0.07,4.16,3.82,4.16,2.59,2.77,1.39
+CRG,CIRENG,PCS,heuristik,5.0,lemah,std 26 minggu terakhir (heuristik),0.44,2.21,0.0,5.64,0.14,0.0,3.5,0.06,3.82,3.5,3.82,2.39,2.56,1.26
+MDT,MEDIA TANAM,SACK,rendah,1.38,cukup,residual test (croston_event),2.48,3.43,3.96,3.96,0.14,2.46,2.46,2.81,2.95,2.46,2.95,2.45,2.86,0.09
+TTL,TEH BUNGA TELANG,GR,heuristik,5.0,lemah,std 26 minggu terakhir (heuristik),0.49,2.43,0.0,3.86,0.14,0.0,2.4,0.07,2.75,2.4,2.75,1.8,1.99,0.76
+CKP,COKLAT PERMEN,GR,sedang,1.99,cukup,residual test (croston_event),1.17,2.32,1.84,3.88,0.14,1.15,2.41,1.31,2.74,2.41,2.74,1.33,1.57,1.17
+PPK,PUPUK,SACK,rendah,1.13,cukup,residual test (arima),1.46,1.65,2.12,4.01,0.14,1.32,2.49,1.53,2.73,2.49,2.73,1.32,1.53,1.2
+BMG,BAWANG MERAH GORENG,GR,heuristik,5.0,lemah,std 26 minggu terakhir (heuristik),0.39,1.93,0.0,3.78,0.14,0.0,2.35,0.06,2.62,2.35,2.62,1.67,1.82,0.8
+KRL,KERIPIK LABU,GR,heuristik,5.0,lemah,std 26 minggu terakhir (heuristik),0.37,1.86,0.0,3.78,0.14,0.0,2.35,0.05,2.61,2.35,2.61,1.66,1.8,0.81
+MNJ,MINUMAN JERUK,BOTOL,heuristik,5.0,lemah,std 26 minggu terakhir (heuristik),0.33,1.64,0.0,3.75,0.14,0.0,2.33,0.05,2.57,2.33,2.57,1.61,1.74,0.83
+KJG,KERIPIK JAGUNG GEPREK,GR,heuristik,5.0,lemah,std 26 minggu terakhir (heuristik),0.3,1.5,0.0,3.73,0.14,0.0,2.32,0.04,2.53,2.32,2.53,1.58,1.7,0.83
+MNT,MINUMAN TIMUN,BOTOL,heuristik,5.0,lemah,std 26 minggu terakhir (heuristik),0.29,1.43,0.0,3.63,0.14,0.0,2.26,0.04,2.46,2.26,2.46,1.54,1.65,0.81
+MNM,MINUMAN,BOTOL,heuristik,5.0,lemah,std 26 minggu terakhir (heuristik),0.26,1.29,0.0,3.67,0.14,0.0,2.28,0.04,2.46,2.28,2.46,1.53,1.63,0.83
+PSK,PISANG KEPOK,SISIR,rendah,2.58,cukup,residual test (croston_event),0.98,2.52,3.12,3.12,0.14,1.94,1.94,2.08,2.3,1.94,2.3,1.91,2.14,0.16
+KCT,KACANG TELOR,GR,heuristik,5.0,lemah,std 26 minggu terakhir (heuristik),0.24,1.21,0.0,3.14,0.14,0.0,1.95,0.03,2.13,1.95,2.13,1.33,1.42,0.71
+KRY,KERIPIK BAYAM,GR,heuristik,5.0,lemah,std 26 minggu terakhir (heuristik),0.3,1.5,0.0,3.02,0.14,0.0,1.87,0.04,2.09,1.87,2.09,1.33,1.44,0.65
+KMG,KEMANGI,IKAT,heuristik,5.0,lemah,std 26 minggu terakhir (heuristik),0.26,1.29,0.0,2.94,0.14,0.0,1.83,0.04,2.01,1.83,2.01,1.27,1.36,0.65
+LDB,LIDAH BUAYA,KG,sedang,0.95,cukup,residual test (croston_event),0.58,0.55,1.28,2.03,0.14,0.8,1.26,0.88,1.34,1.26,1.34,0.79,0.87,0.47
+PMJ,PERMEN JELLY,GR,rendah,2.97,lemah,residual test (arima),0.24,0.72,1.08,1.83,0.14,0.67,1.14,0.7,1.24,1.14,1.24,0.67,0.7,0.54
+LBP,LABU PRIDA,KG,rendah,1.02,lemah,residual test (arima),0.45,0.46,1.01,1.76,0.14,0.63,1.09,0.69,1.16,1.09,1.16,0.63,0.69,0.47

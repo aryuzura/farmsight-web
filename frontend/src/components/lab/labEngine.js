@@ -58,8 +58,21 @@ export function addDays(dateStr, n) {
 
 // ---------- Persiapan data ----------
 
-// Gabungkan master produk dengan forecast per produk.
-export function prepareProducts(produk = [], forecast = [], riwayat = []) {
+const groupBy = (rows, keyFn) => {
+  const m = new Map();
+  rows.forEach((r) => {
+    const k = keyFn(r);
+    if (!m.has(k)) m.set(k, []);
+    m.get(k).push(r);
+  });
+  return m;
+};
+
+// Versi hasil tuning -> nama varian di validasi_event_test.csv.
+const VARIAN_BY_VERSI = { event: 'croston_sadar_event', buta: 'croston_buta_event' };
+
+// Gabungkan master produk dengan forecast per produk (+ data skenario bazar bila ada).
+export function prepareProducts(produk = [], forecast = [], riwayat = [], skenario = null) {
   const fcBy = new Map();
   forecast.forEach((r) => {
     if (!fcBy.has(r.kode_produk)) fcBy.set(r.kode_produk, []);
@@ -73,6 +86,20 @@ export function prepareProducts(produk = [], forecast = [], riwayat = []) {
     histBy.get(r.kode_produk).push(num(r.demand));
   });
 
+  // Data skenario bazar (opsional).
+  const bzBy = new Map((skenario?.bazar ?? []).map((r) => [r.kode_produk, r]));
+  const ssBy = new Map((skenario?.ss_rop ?? []).map((r) => [r.kode_produk, r]));
+  const tunBy = new Map((skenario?.versi_event ?? []).map((r) => [r.kode_produk, r]));
+  const valBy = groupBy(skenario?.validasi ?? [], (r) => r.kode_produk);
+  // Total prediksi skenario: rasio bazar/normal = pengali permintaan untuk mode pipeline.
+  const scenSum = new Map();
+  (skenario?.forecast ?? []).forEach((r) => {
+    const e = scenSum.get(r.kode_produk) ?? { normal: 0, bazar: 0 };
+    if (r.skenario === 'normal_tanpa_event') e.normal += num(r.prediksi);
+    else if (r.skenario === 'asumsi_bazar_posisi_tak_pasti') e.bazar += num(r.prediksi);
+    scenSum.set(r.kode_produk, e);
+  });
+
   return produk.map((p) => {
     const fc = fcBy.get(p.kode_produk) ?? [];
     const hist = histBy.get(p.kode_produk) ?? [];
@@ -84,6 +111,45 @@ export function prepareProducts(produk = [], forecast = [], riwayat = []) {
     const rmse = num(p.rmse, NaN);
     const sigmaUsed = Number.isFinite(sigma) ? sigma : Number.isFinite(rmse) ? rmse : histSd;
     const last52 = hist.slice(-52);
+
+    let bz = null;
+    const b = bzBy.get(p.kode_produk);
+    if (b) {
+      const s = ssBy.get(p.kode_produk);
+      const t = tunBy.get(p.kode_produk);
+      const sc = scenSum.get(p.kode_produk);
+      const varian = t ? VARIAN_BY_VERSI[t.versi_dipilih] : null;
+      const v = varian ? (valBy.get(p.kode_produk) ?? []).find((x) => x.varian === varian) : null;
+      bz = {
+        rasio: Math.max(0, num(b.rasio_event, 1)),
+        bukti: b.bukti_event ?? '-',
+        versi: t?.versi_dipilih ?? b.versi_event ?? null,
+        hanyaSaatEvent: num(b.hanya_terjual_saat_event) > 0,
+        nMingguEvent: num(b.n_minggu_event),
+        nEventTerjual: num(b.n_event_terjual),
+        dNormal: num(b.d_normal_minggu),
+        dEvent: num(b.d_event_minggu),
+        kebutuhanNormal: num(b.kebutuhan_4mgg_normal),
+        kebutuhanBazar: num(b.kebutuhan_4mgg_dengan_bazar),
+        tambahan: num(b.tambahan_unit_bazar),
+        sigmaEvent: num(s?.sigma_event),
+        ssEvent: s ? num(s.safety_stock_event) : null,
+        ropEvent: s ? num(s.reorder_point_event) : null,
+        ssBaseline: s ? num(s.ss_baseline_tanpa_event) : null,
+        ropBaseline: s ? num(s.rop_baseline_tanpa_event) : null,
+        pipelineRatio: sc && sc.normal > 0 ? sc.bazar / sc.normal : 1,
+        validasi: v
+          ? {
+            varian,
+            aktual: num(v.aktual_event_total),
+            prediksi: num(v.prediksi_event_total),
+            mae: num(v.mae_event),
+            bias: num(v.bias_event),
+          }
+          : null,
+      };
+    }
+
     return {
       kode: p.kode_produk,
       nama: p.nama_produk ?? p.kode_produk,
@@ -103,6 +169,7 @@ export function prepareProducts(produk = [], forecast = [], riwayat = []) {
       terprediksi: fc.length > 0,
       histMean,
       histRecent: last52.length ? sum(last52) / last52.length : 0,
+      bz,
     };
   });
 }
@@ -206,7 +273,12 @@ export const DEFAULT_PARAMS = {
   pricePct: 0,         // keputusan: ubah harga (%)
   elasticity: 1,       // sensitivitas permintaan terhadap harga
   bazaarWeeks: 0,      // keputusan: tambahan minggu bazaar
-  bazaarUpliftPct: 0,  // diisi dari data historis
+  bazaarUpliftPct: 0,  // cadangan (produk tanpa data skenario), diisi dari data historis
+  miniWeeks: 0,        // keputusan: minggu mini bazar
+  miniStrengthPct: 40, // kekuatan mini bazar relatif terhadap bazar penuh (asumsi, bisa diubah)
+  bazaarScalePct: 100, // skala lonjakan bazar terhadap rasio dari data skenario (100 = sesuai data)
+  bazaarMode: 'manual', // 'manual' atau 'pipeline' (1 minggu bazar per 4 minggu, posisi belum pasti)
+  useEventPolicy: false, // pakai SS/ROP rekomendasi bazar sebagai kebijakan stok
   ssBoostPct: 0,       // keputusan: tambah safety stock (%)
   startStockPct: 100,  // stok awal terhadap level target (%)
   ltMult: 1,           // gangguan: pengali lead time
@@ -245,24 +317,74 @@ function runInventory({ demand, target, startStock, leadWeeks, supplyFactor, pri
   return rows;
 }
 
+function miniWeekSet(n, horizon, taken) {
+  const cands = [];
+  for (let h = 1; h <= horizon; h += 1) if (!taken.has(h)) cands.push(h);
+  const k = Math.min(Math.max(0, Math.round(n)), cands.length);
+  const set = new Set();
+  for (let i = 0; i < k; i += 1) set.add(cands[Math.floor(((i + 0.5) * cands.length) / k)]);
+  return set;
+}
+
+// Rencana event per produk: pengali permintaan tiap minggu, plus bobot event (s) untuk SS/ROP.
+// - manual: bazar penuh memakai rasio_event produk (skenario_bazar.csv); mini bazar memakai
+//   sebagian lonjakan itu (miniStrengthPct). Produk tanpa data skenario memakai uplift global.
+// - pipeline: pengali = total prediksi 'asumsi_bazar_posisi_tak_pasti' / 'normal_tanpa_event'.
+function eventPlan(p, horizon, prm, fallbackUplift) {
+  const flat = new Array(horizon).fill(1);
+  const bz = p.bz;
+  if (prm.bazaarMode === 'pipeline') {
+    if (!bz) return { factors: flat, s: 0, scale: 1 };
+    return { factors: flat.map(() => bz.pipelineRatio), s: 1, scale: 1 };
+  }
+  const full = bazaarWeekSet(prm.bazaarWeeks, horizon);
+  const mini = miniWeekSet(prm.miniWeeks, horizon, full);
+  const scale = bz ? prm.bazaarScalePct / 100 : 1;
+  const uplift = bz ? Math.max(0, bz.rasio - 1) * scale : fallbackUplift;
+  const ms = prm.miniStrengthPct / 100;
+  const factors = flat.map((_, i) => {
+    if (full.has(i + 1)) return 1 + uplift;
+    if (mini.has(i + 1)) return 1 + uplift * ms;
+    return 1;
+  });
+  const s = full.size > 0 ? 1 : mini.size > 0 ? ms : 0;
+  return { factors, s, scale };
+}
+
 function scenarioForProduct(p, horizon, params, bzUplift, isScenario) {
   const series = productForecastSeries(p, horizon);
   const prm = isScenario ? params : DEFAULT_PARAMS;
   const demandMult = (1 + prm.demandPct / 100) * Math.pow(Math.max(0.01, 1 + prm.pricePct / 100), -prm.elasticity);
-  const bz = bazaarWeekSet(isScenario ? prm.bazaarWeeks : 0, horizon);
-  const bzFactor = 1 + (isScenario ? bzUplift : 0);
+  const plan = eventPlan(p, horizon, prm, bzUplift);
   const price = p.harga * (1 + prm.pricePct / 100);
 
-  const demand = series.map((s) => s.mean * demandMult * (bz.has(s.h) ? bzFactor : 1));
+  const demand = series.map((s, i) => s.mean * demandMult * plan.factors[i]);
 
   const leadWeeks = p.leadTime * prm.ltMult + prm.delayDays / 7;
   const ssBase = SERVICE_Z * p.sigma * Math.sqrt(Math.max(p.leadTime, 0.01));
-  const ssNew = SERVICE_Z * p.sigma * demandMult * Math.sqrt(Math.max(leadWeeks, 0.01)) * (1 + prm.ssBoostPct / 100);
-  const dBar = p.rataMinggu * demandMult;
+
+  // Saat ada event, sigma dan rata-rata permintaan untuk SS/ROP bergeser ke nilai event
+  // (sigma_event & d_event_minggu dari ss_rop_skenario.csv), dibobot sesuai kekuatan event.
+  let sigmaUse = p.sigma;
+  let dBarBase = p.rataMinggu;
+  if (p.bz && plan.s > 0) {
+    const sigmaEvent = Math.max(p.bz.sigmaEvent, p.sigma);
+    sigmaUse = p.sigma + (sigmaEvent - p.sigma) * plan.s;
+    dBarBase = p.rataMinggu + Math.max(0, p.bz.dEvent - p.bz.dNormal) * plan.scale * plan.s;
+  }
+
+  const ssNew = SERVICE_Z * sigmaUse * demandMult * Math.sqrt(Math.max(leadWeeks, 0.01)) * (1 + prm.ssBoostPct / 100);
+  const dBar = dBarBase * demandMult;
   const ropNew = dBar * leadWeeks + ssNew;
 
   // Kebijakan stok: order-up-to = ROP dasar + SS tambahan + permintaan rata-rata 1 minggu.
-  const target = p.rop + ssBase * (prm.ssBoostPct / 100) + p.rataMinggu;
+  let target = p.rop + ssBase * (prm.ssBoostPct / 100) + p.rataMinggu;
+  if (prm.useEventPolicy && plan.s > 0) {
+    // Kebijakan disiapkan untuk event (lead time normal, sebelum gangguan terjadi).
+    const ssPol = SERVICE_Z * sigmaUse * Math.sqrt(Math.max(p.leadTime, 0.01));
+    target = p.rop + (ssPol - ssBase) + (dBarBase - p.rataMinggu) * p.leadTime
+      + ssPol * (prm.ssBoostPct / 100) + dBarBase;
+  }
   const rows = runInventory({
     demand,
     target,
@@ -338,6 +460,24 @@ export function simulate(products, horizon, params, bzUplift) {
   const normal = summarize(products.map((p) => scenarioForProduct(p, horizon, params, bzUplift, false)), horizon);
   const scenario = summarize(products.map((p) => scenarioForProduct(p, horizon, params, bzUplift, true)), horizon);
   return { normal, scenario };
+}
+
+// Ringkasan data skenario bazar untuk produk terpilih (skenario_bazar.csv dkk).
+export function bazaarSummary(products = []) {
+  const rows = products
+    .filter((p) => p.bz)
+    .map((p) => ({ kode: p.kode, nama: p.nama, harga: p.harga, satuan: p.satuan, ...p.bz }))
+    .sort((a, b) => b.tambahan - a.tambahan);
+  return {
+    rows,
+    n: rows.length,
+    kebutuhanNormal: sum(rows.map((r) => r.kebutuhanNormal)),
+    kebutuhanBazar: sum(rows.map((r) => r.kebutuhanBazar)),
+    tambahan: sum(rows.map((r) => r.tambahan)),
+    tambahanRp: sum(rows.map((r) => r.tambahan * r.harga)),
+    lemah: rows.filter((r) => r.bukti === 'lemah').length,
+    batas: rows.filter((r) => r.rasio >= 4.995).length,
+  };
 }
 
 // ---------- Eksplorasi historis ----------

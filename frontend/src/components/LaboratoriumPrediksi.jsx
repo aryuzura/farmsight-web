@@ -54,7 +54,7 @@ const LaboratoriumPrediksi = () => {
   }, [reloadKey]);
 
   const products = useMemo(
-    () => (raw ? prepareProducts(raw.produk, raw.forecast, raw.riwayat) : []),
+    () => (raw ? prepareProducts(raw.produk, raw.forecast, raw.riwayat, raw.skenario) : []),
     [raw],
   );
   const modeled = useMemo(() => products.filter((p) => p.terprediksi), [products]);

@@ -1458,6 +1458,87 @@ def get_dashboard_skor_operasional():
 # LABORATORIUM PREDIKSI
 # ============================================================
 
+def read_optional_csv(filename):
+    """Membaca CSV pendukung; mengembalikan None jika tidak ada/rusak."""
+    try:
+        return normalize_code(read_csv_data(filename))
+    except HTTPException:
+        return None
+
+
+def build_skenario_payload():
+    """
+    Data skenario bazar/mini bazar untuk Laboratorium Prediksi.
+    Semua file bersifat opsional: bila tidak ada, fitur simulasi kembali ke
+    perilaku lama (uplift global dari data historis).
+
+    - bazar: ringkasan per produk (rasio bazar, kebutuhan 4 minggu normal vs bazar)
+    - forecast: prediksi mingguan skenario 'normal_tanpa_event' dan
+      'asumsi_bazar_posisi_tak_pasti' (1 minggu bazar per 4 minggu)
+    - ss_rop: safety stock & ROP biasa vs saat event
+    - versi_event: versi model terpilih (sadar event / buta event)
+    - validasi: hasil uji model pada minggu event
+    """
+    bazar = read_optional_csv("skenario_bazar.csv")
+    fc = read_optional_csv("forecast_skenario_mingguan.csv")
+    ss = read_optional_csv("ss_rop_skenario.csv")
+    versi = read_optional_csv("tuning_versi_event.csv")
+    validasi = read_optional_csv("validasi_event_test.csv")
+
+    def pick(df, cols, numeric=()):
+        if df is None:
+            return []
+        df = df.copy()
+        for c in numeric:
+            df = numeric_column(df, c)
+        keep = [c for c in cols if c in df.columns]
+        if "kode_produk" not in keep:
+            return []
+        return clean_records(df[keep])
+
+    fc_records = []
+    if fc is not None and {"kode_produk", "minggu_mulai", "skenario", "prediksi"}.issubset(fc.columns):
+        fc = numeric_column(fc.copy(), "prediksi")
+        fc["minggu_mulai"] = pd.to_datetime(
+            fc["minggu_mulai"], errors="coerce"
+        ).dt.strftime("%Y-%m-%d")
+        fc = fc.dropna(subset=["minggu_mulai", "prediksi"])
+        fc_records = clean_records(
+            fc[["kode_produk", "minggu_mulai", "skenario", "prediksi"]]
+        )
+
+    bazar_cols = [
+        "kode_produk", "tier_model", "metode_dasar", "versi_event",
+        "rasio_event", "rasio_mentah", "bukti_event",
+        "hanya_terjual_saat_event", "n_minggu_event", "n_event_terjual",
+        "d_normal_minggu", "d_event_minggu", "kebutuhan_4mgg_normal",
+        "kebutuhan_4mgg_dengan_bazar", "tambahan_unit_bazar",
+    ]
+    ss_cols = [
+        "kode_produk", "keandalan", "sumber_sigma", "sigma_biasa",
+        "sigma_event", "lead_time_minggu", "safety_stock_event",
+        "reorder_point_event", "safety_stock_rekomendasi",
+        "reorder_point_rekomendasi", "ss_baseline_tanpa_event",
+        "rop_baseline_tanpa_event",
+    ]
+    val_cols = [
+        "kode_produk", "varian", "n_minggu_event", "mae_event",
+        "bias_event", "aktual_event_total", "prediksi_event_total",
+    ]
+
+    payload = {
+        "bazar": pick(bazar, bazar_cols, bazar_cols[4:]),
+        "forecast": fc_records,
+        "ss_rop": pick(ss, ss_cols, ss_cols[3:]),
+        "versi_event": pick(
+            versi, ["kode_produk", "versi_dipilih"]
+        ),
+        "validasi": pick(validasi, val_cols, val_cols[2:]),
+    }
+    payload["tersedia"] = len(payload["bazar"]) > 0
+    return payload
+
+
 @app.get("/api/lab/data")
 def get_lab_data():
     """
@@ -1465,6 +1546,13 @@ def get_lab_data():
     - produk: master + parameter model/stok per produk
     - riwayat: demand mingguan operasional (semua produk)
     - forecast: prediksi model per produk per minggu
+    - meta: horizon model, tanggal data terakhir, pembagian train/test
+
+    Catatan dasar interval:
+    - dasar_interval = "model": sigma dari residual model pada periode test.
+    - dasar_interval = "heuristik": produk punya prediksi model, tetapi
+      safety stock/ROP/sigma memakai rata-rata & simpangan baku demand mentah
+      train (tanpa model) karena data terlalu sedikit.
     """
     try:
         produk = normalize_code(read_csv_data("dim_produk.csv"))
@@ -1472,6 +1560,8 @@ def get_lab_data():
         forecast = normalize_code(read_csv_data("forecast_kedepan.csv"))
         stok = normalize_code(read_csv_data("safety_stock_rop.csv"))
         model = normalize_code(read_csv_data("model_terbaik.csv"))
+        profil = read_optional_csv("profil_produk.csv")
+        split_info = read_optional_csv("split_info.csv")
 
         # ---------- Riwayat mingguan (hanya minggu operasional) ----------
         if "status_periode" in mingguan.columns:
@@ -1479,7 +1569,24 @@ def get_lab_data():
                 mingguan["status_periode"] == "operasional"
             ].copy()
 
-        for col in ["y", "pendapatan", "n_transaksi", "ada_bazaar"]:
+        # Bazaar + mini bazaar sudah digabung jadi satu kolom: ada_event.
+        # Bila CSV masih versi lama, bentuk ada_event dari kolom lama.
+        if "ada_event" not in mingguan.columns:
+            kolom_lama = [
+                c for c in ["ada_bazaar", "ada_mini_bazaar"]
+                if c in mingguan.columns
+            ]
+            if kolom_lama:
+                mingguan["ada_event"] = (
+                    mingguan[kolom_lama]
+                    .apply(pd.to_numeric, errors="coerce")
+                    .fillna(0)
+                    .sum(axis=1) > 0
+                ).astype(int)
+            else:
+                mingguan["ada_event"] = 0
+
+        for col in ["y", "pendapatan", "n_transaksi", "ada_event"]:
             mingguan = numeric_column(mingguan, col)
 
         mingguan["minggu_mulai"] = pd.to_datetime(
@@ -1497,9 +1604,13 @@ def get_lab_data():
                 "y",
                 "pendapatan",
                 "n_transaksi",
-                "ada_bazaar",
+                "ada_event",
             ]
         ].rename(columns={"y": "demand"})
+
+        # Alias supaya halaman React yang masih membaca `ada_bazaar` tidak rusak.
+        # Hapus baris ini setelah frontend memakai `ada_event`.
+        riwayat["ada_bazaar"] = riwayat["ada_event"]
 
         # ---------- Master produk + parameter model/stok ----------
         produk = numeric_column(produk, "harga_satuan")
@@ -1521,6 +1632,8 @@ def get_lab_data():
             .copy()
         )
 
+        # safety_stock_rop.csv: tier_model/keandalan di file ini bisa bernilai
+        # "heuristik" (tanpa model), jadi tidak dipakai sebagai keandalan model.
         kolom_stok = [
             c for c in [
                 "kode_produk",
@@ -1529,6 +1642,8 @@ def get_lab_data():
                 "lead_time_minggu",
                 "safety_stock",
                 "reorder_point",
+                "metode_dasar",
+                "pola_pengadaan",
             ]
             if c in stok.columns
         ]
@@ -1545,7 +1660,9 @@ def get_lab_data():
                 "kode_produk",
                 "model_terbaik",
                 "rmse",
+                "mae",
                 "mase",
+                "tier_model",
                 "keandalan",
                 "catatan_keandalan",
             ]
@@ -1559,24 +1676,97 @@ def get_lab_data():
                 validate="one_to_one",
             )
 
+        if profil is not None and {"kode_produk", "pola_demand"}.issubset(
+            profil.columns
+        ):
+            master = master.merge(
+                profil[["kode_produk", "pola_demand"]].drop_duplicates(
+                    subset=["kode_produk"]
+                ),
+                on="kode_produk",
+                how="left",
+                validate="one_to_one",
+            )
+
         # ---------- Forecast ----------
         forecast = numeric_column(forecast, "prediksi")
-        forecast["prediksi"] = forecast["prediksi"].clip(lower=0).round(4)
+        # Tanpa pembulatan: total pendapatan harus sama dengan dashboard utama.
+        forecast["prediksi"] = forecast["prediksi"].clip(lower=0)
         forecast["minggu_mulai"] = pd.to_datetime(
             forecast["minggu_mulai"], errors="coerce"
         ).dt.strftime("%Y-%m-%d")
         forecast = forecast.dropna(subset=["minggu_mulai", "prediksi"])
         forecast = forecast.sort_values(["kode_produk", "minggu_mulai"])
 
+        # Produk yang punya prediksi model terisi keandalannya dari forecast
+        # bila model_terbaik.csv tidak memuatnya.
+        if "keandalan" in forecast.columns:
+            if "keandalan" not in master.columns:
+                master["keandalan"] = pd.NA
+            keandalan_fc = (
+                forecast.drop_duplicates(subset=["kode_produk"])
+                .set_index("kode_produk")["keandalan"]
+            )
+            master["keandalan"] = master["keandalan"].fillna(
+                master["kode_produk"].map(keandalan_fc)
+            )
+
+        # Dasar interval: model (residual test) atau heuristik (demand mentah).
+        if "metode_dasar" in master.columns:
+            heuristik = (
+                master["metode_dasar"]
+                .astype("string")
+                .str.lower()
+                .str.startswith("heuristik", na=False)
+            )
+            master["dasar_interval"] = np.where(
+                master["metode_dasar"].isna(),
+                None,
+                np.where(heuristik, "heuristik", "model"),
+            )
+
+        kolom_forecast = [
+            c for c in ["kode_produk", "minggu_mulai", "prediksi", "metode"]
+            if c in forecast.columns
+        ]
+        forecast_out = forecast[kolom_forecast]
+
+        # ---------- Meta ----------
+        per_produk = forecast.groupby("kode_produk").size()
+        meta = {
+            "horizon_model_minggu": (
+                int(per_produk.max()) if len(per_produk) else 0
+            ),
+            "forecast_mulai": (
+                forecast["minggu_mulai"].min() if len(forecast) else None
+            ),
+            "forecast_akhir": (
+                forecast["minggu_mulai"].max() if len(forecast) else None
+            ),
+            "data_terakhir": (
+                riwayat["minggu_mulai"].max() if len(riwayat) else None
+            ),
+            "n_produk_terprediksi": int(forecast["kode_produk"].nunique()),
+            "n_produk_heuristik": int(
+                (
+                    master.loc[
+                        master["kode_produk"].isin(forecast["kode_produk"]),
+                        "dasar_interval",
+                    ] == "heuristik"
+                ).sum()
+            ) if "dasar_interval" in master.columns else 0,
+            "split": (
+                clean_records(split_info) if split_info is not None else []
+            ),
+        }
+
         return {
             "status": "berhasil",
+            "meta": meta,
             "produk": clean_records(master),
             "riwayat": clean_records(riwayat),
-            "forecast": clean_records(
-                forecast[["kode_produk", "minggu_mulai", "prediksi", "metode"]]
-                if "metode" in forecast.columns
-                else forecast[["kode_produk", "minggu_mulai", "prediksi"]]
-            ),
+            "forecast": clean_records(forecast_out),
+            "skenario": build_skenario_payload(),
         }
     except HTTPException:
         raise

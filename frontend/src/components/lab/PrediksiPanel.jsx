@@ -18,7 +18,16 @@ const TARGETS = [
   { id: 'pendapatan', label: 'Pendapatan (Rp)' },
 ];
 
-const reliabilityTone = (k) => (k === 'tinggi' || k === 'baik' ? 'green' : k === 'cukup' ? 'amber' : k === 'rendah' ? 'red' : 'gray');
+// Semua tabel memakai tinggi baris yang sama; lebih dari TABLE_MAX_ROWS baris bisa di-scroll.
+const TABLE_ROW_H = 56;
+const TABLE_HEAD_H = 40;
+const TABLE_MAX_ROWS = 7;
+const tableScrollStyle = { maxHeight: TABLE_HEAD_H + TABLE_ROW_H * TABLE_MAX_ROWS };
+const headRowStyle = { height: TABLE_HEAD_H };
+const bodyRowStyle = { height: TABLE_ROW_H };
+const stickyHead = 'sticky top-0 z-10 bg-white shadow-[inset_0_-1px_0_#e5e7eb]';
+
+const reliabilityTone =(k) => (k === 'tinggi' || k === 'baik' ? 'green' : k === 'cukup' ? 'amber' : k === 'rendah' ? 'red' : 'gray');
 
 export function PredictionTooltip({ active, payload, label, isRp }) {
   if (!active || !payload?.length) return null;
@@ -181,48 +190,52 @@ export default function PrediksiPanel({ products, riwayat, scope, setScope, hori
       <div className="grid gap-4 lg:grid-cols-2">
         <div className={`${CARD} overflow-x-auto`}>
           <h3 className="mb-3 font-semibold text-gray-900">Rincian per minggu</h3>
+          <div className="overflow-y-auto" style={tableScrollStyle}>
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wide text-gray-500">
-                <th className="py-2 pr-2">Minggu</th>
-                <th className="py-2 pr-2 text-right">Prediksi</th>
-                <th className="py-2 text-right">Rentang {conf}%</th>
+              <tr className="text-left text-xs uppercase tracking-wide text-gray-500" style={headRowStyle}>
+                <th className={`px-0 pr-2 ${stickyHead}`}>Minggu</th>
+                <th className={`pr-2 text-right ${stickyHead}`}>Prediksi</th>
+                <th className={`text-right ${stickyHead}`}>Rentang {conf}%</th>
               </tr>
             </thead>
             <tbody>
               {fc.weeks.map((w) => (
-                <tr key={w.h} className="border-b border-gray-100">
-                  <td className="py-1.5 pr-2 text-gray-700">{w.h}. {fmtWeek(w.week)}{w.extrap && <span className="ml-1 text-xs text-amber-600">perp.</span>}</td>
-                  <td className="py-1.5 pr-2 text-right tabular-nums font-medium">{isRp ? fmtRpCompact(w.mean) : fmtNum(w.mean, 2)}</td>
-                  <td className="py-1.5 text-right tabular-nums text-gray-500">{isRp ? `${fmtRpCompact(w.lower)} - ${fmtRpCompact(w.upper)}` : `${fmtNum(w.lower, 1)} - ${fmtNum(w.upper, 1)}`}</td>
+                <tr key={w.h} className="border-b border-gray-100" style={bodyRowStyle}>
+                  <td className="pr-2 text-gray-700">{w.h}. {fmtWeek(w.week)}{w.extrap && <span className="ml-1 text-xs text-amber-600">perp.</span>}</td>
+                  <td className="pr-2 text-right tabular-nums font-medium">{isRp ? fmtRpCompact(w.mean) : fmtNum(w.mean, 2)}</td>
+                  <td className="text-right tabular-nums text-gray-500">{isRp ? `${fmtRpCompact(w.lower)} - ${fmtRpCompact(w.upper)}` : `${fmtNum(w.lower, 1)} - ${fmtNum(w.upper, 1)}`}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
         </div>
 
         <div className={`${CARD} overflow-x-auto`}>
           <h3 className="mb-3 font-semibold text-gray-900">Per produk (total {horizon} minggu)</h3>
+          <div className="overflow-y-auto" style={tableScrollStyle}>
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wide text-gray-500">
-                <th className="py-2 pr-2">Produk</th>
-                <th className="py-2 pr-2 text-right">Prediksi</th>
-                <th className="py-2 pr-2 text-right">Rentang</th>
-                <th className="py-2">Keandalan</th>
+              <tr className="text-left text-xs uppercase tracking-wide text-gray-500" style={headRowStyle}>
+                <th className={`pr-2 ${stickyHead}`}>Produk</th>
+                <th className={`pr-2 text-right ${stickyHead}`}>Prediksi</th>
+                <th className={`pr-2 text-right ${stickyHead}`}>Rentang</th>
+                <th className={stickyHead}>Keandalan</th>
               </tr>
             </thead>
             <tbody>
               {[...fc.perProduct].sort((a, b) => b.total - a.total).map((p) => (
-                <tr key={p.kode} className="border-b border-gray-100">
-                  <td className="py-1.5 pr-2 text-gray-700">{p.nama}<span className="block text-xs text-gray-400">{p.model}</span></td>
-                  <td className="py-1.5 pr-2 text-right tabular-nums font-medium">{isRp ? fmtRpCompact(p.total) : fmtNum(p.total, 1)}</td>
-                  <td className="py-1.5 pr-2 text-right tabular-nums text-gray-500">{isRp ? `${fmtRpCompact(p.lower)} - ${fmtRpCompact(p.upper)}` : `${fmtNum(p.lower, 0)} - ${fmtNum(p.upper, 0)}`}</td>
-                  <td className="py-1.5"><Badge tone={reliabilityTone(p.keandalan)}>{p.keandalan ?? '-'}</Badge></td>
+                <tr key={p.kode} className="border-b border-gray-100" style={bodyRowStyle}>
+                  <td className="pr-2 text-gray-700">{p.nama}<span className="block text-xs text-gray-400">{p.model}</span></td>
+                  <td className="pr-2 text-right tabular-nums font-medium">{isRp ? fmtRpCompact(p.total) : fmtNum(p.total, 1)}</td>
+                  <td className="pr-2 text-right tabular-nums text-gray-500">{isRp ? `${fmtRpCompact(p.lower)} - ${fmtRpCompact(p.upper)}` : `${fmtNum(p.lower, 0)} - ${fmtNum(p.upper, 0)}`}</td>
+                  <td><Badge tone={reliabilityTone(p.keandalan)}>{p.keandalan ?? '-'}</Badge></td>
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </div>
