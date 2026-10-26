@@ -5,6 +5,7 @@ import {
   ComposedChart,
   Line,
   LabelList,
+  Brush,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -13,6 +14,17 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { fetchApi } from '../api';
+import {
+  bazaarUplift,
+  buildForecast,
+  eventShare,
+  horizonWeeks,
+  makeEventConfig,
+  prepareProducts,
+} from './lab/labEngine';
+
+// Pilihan horizon forecast pendapatan (minggu).
+const HORIZON_OPTIONS = [4, 8, 13, 26];
 
 
 const BusinessHealthGauge = ({ score }) => {
@@ -206,13 +218,15 @@ const Dashboard = () => {
   // State untuk data dashboard tambahan
   const [dashboardKpi, setDashboardKpi] = useState(null);
   const [trendData, setTrendData] = useState([]);
-  const [revenueForecastData, setRevenueForecastData] = useState([]);
   const [dashboardProducts, setDashboardProducts] = useState([]);
   const [operationalScore, setOperationalScore] = useState(null);
   const [dashboardDataError, setDashboardDataError] = useState('');
 
-  // Horizon forecast pendapatan (jumlah minggu ke depan yang ditampilkan).
-  const [forecastHorizon, setForecastHorizon] = useState(4);
+  // Data Laboratorium Prediksi. Forecast pendapatan memakai mesin hitung yang sama.
+  const [labData, setLabData] = useState(null);
+
+  // Horizon forecast pendapatan (minggu). Nilai awal sama dengan Laboratorium Prediksi.
+  const [forecastHorizon, setForecastHorizon] = useState(8);
 
   useEffect(() => {
     let cancelled = false;
@@ -285,11 +299,7 @@ const Dashboard = () => {
       const endpoints = [
         ['/api/dashboard/kpi', setDashboardKpi, null],
         ['/api/dashboard/tren-penjualan', setTrendData, []],
-        [
-          '/api/dashboard/forecast-pendapatan',
-          setRevenueForecastData,
-          [],
-        ],
+        ['/api/lab/data', setLabData, null],
         ['/api/dashboard/produk', setDashboardProducts, []],
         [
           '/api/dashboard/skor-operasional',
@@ -595,11 +605,51 @@ const Dashboard = () => {
   }, [forecastData, inventoryData]);
 
   /*
-   * Forecast pendapatan menurut horizon.
-   * Backend mengirim satu baris per minggu. Horizon N minggu = N minggu
-   * pertama, jadi angkanya sama persis dengan data backend. Horizon
-   * maksimum mengikuti jumlah minggu pada forecast_kedepan.csv.
+   * Forecast pendapatan memakai mesin hitung Laboratorium Prediksi (labEngine)
+   * dengan pengaturan awal yang sama: semua produk terprediksi, jadwal bazar
+   * otomatis sesuai frekuensi historis, skala lonjakan 100%, keyakinan 90%.
+   * Dengan begitu angkanya sama dengan halaman Laboratorium Prediksi.
    */
+  const labForecast = useMemo(() => {
+    if (
+      !labData ||
+      !Array.isArray(labData.produk) ||
+      !Array.isArray(labData.riwayat) ||
+      !Array.isArray(labData.forecast)
+    ) {
+      return null;
+    }
+
+    const products = prepareProducts(
+      labData.produk,
+      labData.forecast,
+      labData.riwayat,
+      labData.skenario
+    );
+    const modeled = products.filter((item) => item.terprediksi);
+
+    if (modeled.length === 0) return null;
+
+    const share = eventShare(labData.riwayat);
+    const fallbackUplift = bazaarUplift(labData.riwayat).global;
+    const weeks = horizonWeeks(modeled, forecastHorizon);
+
+    const ev = makeEventConfig({
+      mode: 'auto',
+      weeks,
+      share: share.share,
+      scale: 1,
+      fallbackUplift,
+    });
+
+    return {
+      revenue: buildForecast(modeled, forecastHorizon, 90, 'pendapatan', ev),
+      demand: buildForecast(modeled, forecastHorizon, 90, 'demand', ev),
+      productCount: modeled.length,
+      modelWeeks: Math.max(...modeled.map((item) => item.fc.length)),
+    };
+  }, [labData, forecastHorizon]);
+
   const forecastView = useMemo(() => {
     const dateShort = (date) =>
       date.toLocaleDateString('id-ID', {
@@ -614,46 +664,38 @@ const Dashboard = () => {
         year: 'numeric',
       });
 
-    const weeks = (Array.isArray(revenueForecastData)
-      ? revenueForecastData
-      : []
-    )
-      .map((item) => ({
-        minggu_mulai: item.minggu_mulai ?? item.tanggal ?? null,
-        pendapatan: normalizeNumber(
-          item.estimasi_pendapatan ?? item.forecast_pendapatan
-        ),
-        demand: normalizeNumber(item.total_prediksi_demand),
-        produk: normalizeNumber(item.jumlah_produk),
-      }))
-      .filter(
-        (item) =>
-          item.minggu_mulai &&
-          item.pendapatan !== null &&
-          !Number.isNaN(new Date(`${item.minggu_mulai}T00:00:00`).getTime())
-      )
-      .sort((a, b) =>
-        String(a.minggu_mulai).localeCompare(String(b.minggu_mulai))
-      );
-
-    const maxWeeks = weeks.length;
-    const horizon = Math.min(
-      Math.max(Number(forecastHorizon) || 1, 1),
-      Math.max(maxWeeks, 1)
-    );
+    if (!labForecast) {
+      return {
+        available: false,
+        rows: [],
+        horizon: forecastHorizon,
+        totalRevenue: 0,
+        totalLower: 0,
+        totalUpper: 0,
+        totalDemand: 0,
+        averageRevenue: null,
+        productCount: 0,
+        modelWeeks: 0,
+        periodLabel: '',
+      };
+    }
 
     let running = 0;
 
-    const rows = weeks.slice(0, horizon).map((item, index) => {
-      running += item.pendapatan;
+    const rows = labForecast.revenue.weeks.map((item, index) => {
+      running += item.mean;
 
-      const start = new Date(`${item.minggu_mulai}T00:00:00`);
+      const start = new Date(`${item.week}T00:00:00`);
       const end = new Date(start);
       end.setDate(end.getDate() + 6);
 
       return {
-        ...item,
-        minggu_ke: index + 1,
+        minggu_ke: item.h,
+        minggu_mulai: item.week,
+        pendapatan: item.mean,
+        demand: labForecast.demand.weeks[index]?.mean ?? 0,
+        event: item.event,
+        extrap: item.extrap,
         tanggalLabel: dateShort(start),
         rentang: `${dateShort(start)} – ${dateLong(end)}`,
         kumulatif: running,
@@ -661,27 +703,27 @@ const Dashboard = () => {
     });
 
     const totalDemand = rows.reduce(
-      (total, item) => total + (item.demand ?? 0),
+      (total, item) => total + item.demand,
       0
     );
 
     return {
+      available: rows.length > 0,
       rows,
-      maxWeeks,
-      horizon,
+      horizon: forecastHorizon,
       totalRevenue: running,
+      totalLower: labForecast.revenue.total.lower,
+      totalUpper: labForecast.revenue.total.upper,
       totalDemand,
       averageRevenue: rows.length > 0 ? running / rows.length : null,
-      productCount: rows.reduce(
-        (max, item) => Math.max(max, item.produk ?? 0),
-        0
-      ),
+      productCount: labForecast.productCount,
+      modelWeeks: labForecast.modelWeeks,
       periodLabel:
         rows.length > 0
           ? `${rows[0].rentang.split(' – ')[0]} sampai ${rows[rows.length - 1].rentang.split(' – ')[1]}`
           : '',
     };
-  }, [revenueForecastData, forecastHorizon]);
+  }, [labForecast, forecastHorizon]);
 
   /*
    * Skor kesehatan bisnis.
@@ -825,14 +867,20 @@ const Dashboard = () => {
         icon: '🧠',
         title: 'Cakupan model pada produk aktif',
         description:
-          `${dashboardData.activeModeledCount} dari ${dashboardData.activeCount} produk aktif memiliki model peramalan. ` +
-          `${dashboardData.activeHeuristicCount} produk aktif memakai metode heuristik karena data penjualannya belum cukup, ` +
-          `dan ${inactiveCount} produk tidak aktif sengaja tidak diprediksi.` +
+          `${dashboardData.activeModeledCount} dari ${dashboardData.activeCount} produk aktif memiliki model peramalan.` +
+          (dashboardData.activeHeuristicCount > 0
+            ? ` ${dashboardData.activeHeuristicCount} produk aktif memakai metode heuristik karena data penjualannya belum cukup.`
+            : '') +
+          (inactiveCount > 0
+            ? ` ${inactiveCount} produk tidak aktif sengaja tidak diprediksi.`
+            : '') +
           (unmodeled > 0
             ? ` ${unmodeled} produk aktif belum dimodelkan.`
             : ''),
         action:
-          'Evaluasi kualitas model dengan metrik error, dan tambah data penjualan agar produk heuristik dapat dimodelkan.',
+          dashboardData.activeHeuristicCount > 0
+            ? 'Evaluasi kualitas model dengan metrik error, dan tambah data penjualan agar produk heuristik dapat dimodelkan.'
+            : 'Evaluasi kualitas model dengan metrik error dan pantau akurasinya terhadap penjualan aktual.',
       });
     }
 
@@ -905,30 +953,19 @@ const Dashboard = () => {
     }
 
     // --- Prediksi permintaan ---
-    const forecastWeeks = Array.isArray(revenueForecastData)
-      ? revenueForecastData
-      : [];
-
-    if (forecastWeeks.length > 0) {
-      const totalDemand = forecastWeeks.reduce(
-        (total, item) =>
-          total + (normalizeNumber(item.total_prediksi_demand) ?? 0),
-        0
-      );
-
-      const productCount = Math.max(
-        ...forecastWeeks.map(
-          (item) => normalizeNumber(item.jumlah_produk) ?? 0
-        )
-      );
+    if (forecastView.rows.length > 0) {
+      const totalDemand = forecastView.totalDemand;
+      const productCount = forecastView.productCount;
 
       result.push({
         type: 'info',
         icon: '🔮',
-        title: `Prediksi permintaan tersedia untuk ${forecastWeeks.length} minggu ke depan`,
+        title: `Prediksi permintaan tersedia untuk ${forecastView.rows.length} minggu ke depan`,
         description:
-          `Total prediksi ${formatNumber(totalDemand, 1)} unit dari ${productCount} produk yang memiliki model. ` +
-          `Produk dengan metode heuristik (${dashboardData.activeHeuristicCount} produk aktif) belum memiliki prediksi per minggu.`,
+          `Total prediksi ${formatNumber(totalDemand, 1)} unit dari ${productCount} produk yang memiliki model.` +
+          (dashboardData.activeHeuristicCount > 0
+            ? ` Produk dengan metode heuristik (${dashboardData.activeHeuristicCount} produk aktif) belum memiliki prediksi per minggu.`
+            : ''),
         action:
           'Gunakan prediksi sebagai perkiraan kasar dan pantau akurasinya terhadap penjualan aktual.',
       });
@@ -940,15 +977,14 @@ const Dashboard = () => {
         description:
           'Data prediksi mingguan belum berhasil dimuat dari backend.',
         action:
-          'Pastikan endpoint /api/dashboard/forecast-pendapatan aktif.',
+          'Pastikan endpoint /api/lab/data aktif.',
       });
     }
 
     // --- Pendapatan ---
     const totalPendapatan = normalizeNumber(dashboardKpi?.total_pendapatan);
-    const totalForecast = normalizeNumber(
-      dashboardKpi?.total_forecast_pendapatan
-    );
+    const totalForecast =
+      forecastView.rows.length > 0 ? forecastView.totalRevenue : null;
 
     if (totalPendapatan !== null) {
       result.push({
@@ -980,7 +1016,7 @@ const Dashboard = () => {
     dashboardData,
     dashboardKpi,
     trendData,
-    revenueForecastData,
+    forecastView,
   ]);
 
   const cardClass =
@@ -1257,9 +1293,9 @@ const Dashboard = () => {
               </p>
               <p className="mt-3 text-sm leading-5 text-gray-500">
                 Produk aktif yang memiliki model peramalan.{' '}
-                {dashboardData.activeHeuristicCount} produk aktif memakai
-                metode heuristik. Ini cakupan pemodelan, bukan ukuran
-                akurasi.
+                {dashboardData.activeHeuristicCount > 0 &&
+                  `${dashboardData.activeHeuristicCount} produk aktif memakai metode heuristik. `}
+                Ini cakupan pemodelan, bukan ukuran akurasi.
               </p>
             </div>
 
@@ -1268,16 +1304,45 @@ const Dashboard = () => {
                 Prediksi Pendapatan
               </p>
               <p className="mt-3 text-2xl font-bold">
-                {dashboardKpi?.total_forecast_pendapatan == null
-                  ? 'Belum tersedia'
-                  : `Rp ${formatNumber(
-                      dashboardKpi.total_forecast_pendapatan,
-                      0
-                    )}`}
+                {forecastView.available
+                  ? `Rp ${formatNumber(forecastView.totalRevenue, 0)}`
+                  : 'Belum tersedia'}
               </p>
               <p className="mt-3 text-sm leading-5 text-gray-500">
-                Ditampilkan hanya jika backend menyediakan estimasi
-                pendapatan dari data harga dan prediksi kuantitas.
+                {forecastView.available
+                  ? `Total ${forecastView.horizon} minggu ke depan, sama dengan Laboratorium Prediksi. Atur horizon di bagian Forecast Pendapatan.`
+                  : 'Ditampilkan jika data Laboratorium Prediksi tersedia dari backend.'}
+              </p>
+            </div>
+
+            <div className={cardClass}>
+              <p className="text-sm font-medium text-gray-500">
+                Total Barang Masuk
+              </p>
+              <p className="mt-3 text-2xl font-bold text-amber-700">
+                {dashboardData.inventoryLogCount === 0
+                  ? 'Belum tersedia'
+                  : `${formatNumber(dashboardData.totalBarangMasuk, 0)} unit`}
+              </p>
+              <p className="mt-3 text-sm leading-5 text-gray-500">
+                Jumlah seluruh produk yang masuk dari{' '}
+                {formatNumber(dashboardData.inventoryLogCount, 0)} catatan
+                siklus inventaris.
+              </p>
+            </div>
+
+            <div className={cardClass}>
+              <p className="text-sm font-medium text-gray-500">
+                Total Permintaan Aktual
+              </p>
+              <p className="mt-3 text-2xl font-bold text-emerald-700">
+                {dashboardData.inventoryLogCount === 0
+                  ? 'Belum tersedia'
+                  : `${formatNumber(dashboardData.totalDemandAktual, 0)} unit`}
+              </p>
+              <p className="mt-3 text-sm leading-5 text-gray-500">
+                Jumlah seluruh demand aktual yang tercatat pada siklus
+                inventaris.
               </p>
             </div>
           </div>
@@ -1324,16 +1389,13 @@ const Dashboard = () => {
             <div className={cardClass}>
               <p className="text-sm text-gray-500">Prediksi Pendapatan</p>
               <p className="mt-2 text-2xl font-bold text-purple-700">
-                {dashboardKpi?.total_forecast_pendapatan == null
-                  ? 'Belum tersedia'
-                  : `Rp ${formatNumber(
-                      dashboardKpi.total_forecast_pendapatan,
-                      0
-                    )}`}
+                {forecastView.available
+                  ? `Rp ${formatNumber(forecastView.totalRevenue, 0)}`
+                  : 'Belum tersedia'}
               </p>
-              {forecastView.maxWeeks > 0 && (
+              {forecastView.available && (
                 <p className="mt-2 text-xs text-gray-500">
-                  Total {forecastView.maxWeeks} minggu ke depan. Atur
+                  Total {forecastView.horizon} minggu ke depan. Atur
                   horizon di bagian Forecast Pendapatan.
                 </p>
               )}
@@ -1367,19 +1429,33 @@ const Dashboard = () => {
           </h2>
           <p className="mb-5 mt-1 text-sm text-gray-500">
             Pendapatan historis per tanggal berdasarkan data transaksi.
+            Geser slider di bawah grafik untuk memperbesar atau memilih
+            rentang tanggal.
           </p>
 
           {trendData.length > 0 ? (
-            <div className="h-80">
+            <div className="h-96">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={trendData}>
-                  <CartesianGrid strokeDasharray="3 3" />
+                <BarChart
+                  data={trendData}
+                  margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis
                     dataKey="tanggal"
                     tick={{ fontSize: 11 }}
                     minTickGap={40}
                   />
-                  <YAxis />
+                  <YAxis
+                    tick={{ fontSize: 11 }}
+                    width={56}
+                    tickFormatter={(value) =>
+                      new Intl.NumberFormat('id-ID', {
+                        notation: 'compact',
+                        maximumFractionDigits: 1,
+                      }).format(value)
+                    }
+                  />
                   <Tooltip
                     formatter={(value) => `Rp ${formatNumber(value, 0)}`}
                   />
@@ -1388,6 +1464,17 @@ const Dashboard = () => {
                     dataKey="pendapatan"
                     name="Pendapatan"
                     fill="#0f766e"
+                    maxBarSize={28}
+                  />
+                  {/* Slider rentang tanggal. Awalnya menampilkan 60 data terakhir. */}
+                  <Brush
+                    key={trendData.length}
+                    dataKey="tanggal"
+                    height={32}
+                    stroke="#0f766e"
+                    travellerWidth={10}
+                    startIndex={Math.max(0, trendData.length - 60)}
+                    endIndex={trendData.length - 1}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -1407,12 +1494,13 @@ const Dashboard = () => {
                 Forecast Pendapatan
               </h2>
               <p className="mt-1 text-sm text-gray-500">
-                Estimasi pendapatan dari prediksi demand dikali harga
-                satuan, untuk horizon yang Anda pilih.
+                Memakai mesin hitung yang sama dengan Laboratorium
+                Prediksi: semua produk terprediksi, jadwal bazar otomatis,
+                dan keyakinan 90%.
               </p>
             </div>
 
-            {forecastView.maxWeeks > 0 && (
+            {forecastView.available && (
               <div className="shrink-0">
                 <p
                   id="horizon-label"
@@ -1426,10 +1514,7 @@ const Dashboard = () => {
                   aria-labelledby="horizon-label"
                   className="inline-flex rounded-xl border border-gray-200 bg-gray-50 p-1"
                 >
-                  {Array.from(
-                    { length: forecastView.maxWeeks },
-                    (_, index) => index + 1
-                  ).map((weeks) => {
+                  {HORIZON_OPTIONS.map((weeks) => {
                     const selected = forecastView.horizon === weeks;
 
                     return (
@@ -1467,6 +1552,10 @@ const Dashboard = () => {
                   </p>
                   <p className="mt-1 text-2xl font-bold text-purple-900">
                     Rp {formatNumber(forecastView.totalRevenue, 0)}
+                  </p>
+                  <p className="mt-1 text-xs text-purple-700">
+                    Rentang 90%: Rp {formatNumber(forecastView.totalLower, 0)}{' '}
+                    – Rp {formatNumber(forecastView.totalUpper, 0)}
                   </p>
                 </div>
 
@@ -1529,6 +1618,16 @@ const Dashboard = () => {
                                 Minggu ke-{row.minggu_ke}
                             </p>
                             <p className="mb-2 text-xs text-gray-500">{row.rentang}</p>
+                            {row.event && (
+                              <p className="mb-1 text-xs text-amber-700">
+                                Minggu bazar/mini bazar (perkiraan)
+                              </p>
+                            )}
+                            {row.extrap && (
+                              <p className="mb-1 text-xs text-gray-500">
+                                Perpanjangan di luar jangkauan model
+                              </p>
+                            )}
                             <p className="text-purple-700">
                                 Kumulatif: <strong>Rp {formatNumber(row.kumulatif, 0)}</strong>
                             </p>
@@ -1582,15 +1681,18 @@ const Dashboard = () => {
                 pendapatan sebenarnya.{' '}
                 {lowReliabilityCount > 0 &&
                   `${lowReliabilityCount} produk berkeandalan rendah. `}
-                Gunakan sebagai perkiraan kasar. Horizon maksimum{' '}
-                {forecastView.maxWeeks} minggu sesuai data prediksi yang
-                tersedia.
+                Minggu bazar disebar mengikuti frekuensi historis, bukan
+                jadwal pasti.
+                {forecastView.horizon > forecastView.modelWeeks &&
+                  ` Minggu ke-${forecastView.modelWeeks + 1} dan seterusnya diperpanjang dari level model dengan rentang yang makin lebar.`}{' '}
+                Gunakan sebagai perkiraan kasar. Pengaturan lanjutan
+                (jadwal bazar, skala lonjakan) ada di Laboratorium Prediksi.
               </p>
             </>
           ) : (
             <p className="mt-5 rounded-xl bg-gray-50 p-6 text-sm text-gray-500">
-              Data forecast pendapatan belum tersedia. Pastikan
-              forecast_kedepan.csv dan harga satuan produk tersedia.
+              Data Laboratorium Prediksi belum tersedia. Pastikan endpoint
+              /api/lab/data aktif dan ada produk yang memiliki prediksi model.
             </p>
           )}
         </section>

@@ -199,40 +199,107 @@ export function bazaarUplift(riwayat = []) {
   return { global };
 }
 
+// ---------- Jadwal bazar/mini bazar pada prediksi ----------
+
+// Frekuensi minggu event (bazaar atau mini bazaar digabung) dari riwayat. Flag event berlaku
+// untuk seluruh toko pada minggu itu, jadi cukup satu nilai per minggu.
+export function eventShare(riwayat = [], lastN = 26) {
+  const byWeek = new Map();
+  riwayat.forEach((r) => {
+    const flag = num(r.ada_event ?? r.ada_bazaar) > 0;
+    byWeek.set(r.minggu_mulai, (byWeek.get(r.minggu_mulai) ?? false) || flag);
+  });
+  const weeks = [...byWeek.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)).slice(-lastN);
+  const nEvent = weeks.filter(([, f]) => f).length;
+  return { share: weeks.length ? nEvent / weeks.length : 0, nWeeks: weeks.length, nEvent };
+}
+
+// Daftar tanggal minggu prediksi (sama untuk semua produk).
+export function horizonWeeks(products = [], horizon) {
+  const p = products.find((x) => x.fc.length);
+  return p ? productForecastSeries(p, horizon).map((r) => r.week) : [];
+}
+
+// Susun jadwal event per minggu.
+// - auto: minggu event disebar merata sesuai frekuensi historis (perkiraan, BUKAN jadwal pasti).
+// - manual: minggu yang ditandai pengguna.
+// - none: tanpa event sama sekali.
+export function makeEventConfig({ mode = 'auto', weeks = [], share = 0, manual = [], scale = 1, fallbackUplift = 0 }) {
+  const manualSet = new Set(manual);
+  let flags;
+  if (mode === 'manual') flags = weeks.map((w) => manualSet.has(w));
+  else if (mode === 'auto') flags = weeks.map((_, i) => Math.floor((i + 1) * share + 1e-9) > Math.floor(i * share + 1e-9));
+  else flags = weeks.map(() => false);
+  return { mode, flags, scale, fallbackUplift };
+}
+
 // ---------- Prediksi ----------
 
 // Rangkaian prediksi satu produk (mean + sigma per minggu) sepanjang horizon.
-export function productForecastSeries(prod, horizon) {
+// ev (opsional) = hasil makeEventConfig. Tanpa ev perilakunya sama seperti sebelumnya.
+// Dengan ev: produk yang punya data skenario memakai level minggu biasa (d_normal_minggu) dan
+// minggu event (d_event_minggu) dari pipeline, dengan bentuk mingguan model dipertahankan.
+// Produk tanpa data skenario memakai uplift global pada minggu event.
+export function productForecastSeries(prod, horizon, ev = null) {
   const base = prod.fc;
   if (!base.length) return [];
   const nModel = base.length;
   const level = sum(base.map((r) => r.mean)) / nModel;
   const lastWeek = base[nModel - 1].week;
+  const bz = prod.bz;
+
+  let fN = 1;
+  let fE = 1;
+  let dN = 0;
+  let dE = 0;
+  let absolute = false;
+  if (ev) {
+    if (bz && (bz.dNormal > 0 || bz.dEvent > 0)) {
+      dN = bz.dNormal;
+      dE = dN + Math.max(0, bz.dEvent - bz.dNormal) * ev.scale;
+      if (level > 1e-9) {
+        fN = dN / level;
+        fE = dE / level;
+      } else {
+        absolute = true;
+      }
+    } else {
+      fE = 1 + Math.max(0, ev.fallbackUplift) * ev.scale;
+    }
+  }
+
   const out = [];
   for (let h = 1; h <= horizon; h += 1) {
     const extrap = h > nModel;
     const widen = 1 + WIDEN_PER_WEEK * Math.max(0, h - nModel);
+    const isEvent = !!(ev && ev.flags[h - 1]);
+    const raw = extrap ? level : base[h - 1].mean;
+    let mean = raw;
+    if (ev) mean = absolute ? (isEvent ? dE : dN) : raw * (isEvent ? fE : fN);
+    const sigmaBase = isEvent && bz ? Math.max(bz.sigmaEvent, prod.sigma) : prod.sigma;
     out.push({
       h,
       week: extrap ? addDays(lastWeek, 7 * (h - nModel)) : base[h - 1].week,
-      mean: extrap ? level : base[h - 1].mean,
-      sigma: prod.sigma * widen,
+      mean,
+      sigma: sigmaBase * widen,
       extrap,
+      event: isEvent,
     });
   }
   return out;
 }
 
 // Prediksi agregat banyak produk. target: 'demand' | 'pendapatan'
-export function buildForecast(products, horizon, confPct, target = 'demand') {
+export function buildForecast(products, horizon, confPct, target = 'demand', ev = null) {
   const z = zFromConfidence(confPct);
-  const series = products.map((p) => ({ p, s: productForecastSeries(p, horizon) }));
+  const series = products.map((p) => ({ p, s: productForecastSeries(p, horizon, ev) }));
   const weeks = [];
   for (let h = 1; h <= horizon; h += 1) {
     let mean = 0;
     let varSum = 0;
     let week = null;
     let extrap = false;
+    let event = false;
     series.forEach(({ p, s }) => {
       const row = s[h - 1];
       if (!row) return;
@@ -241,9 +308,10 @@ export function buildForecast(products, horizon, confPct, target = 'demand') {
       varSum += (row.sigma * k) ** 2;
       week = row.week;
       extrap = row.extrap;
+      event = row.event;
     });
     const hw = z * Math.sqrt(varSum);
-    weeks.push({ h, week, mean, lower: Math.max(0, mean - hw), upper: mean + hw, extrap });
+    weeks.push({ h, week, mean, lower: Math.max(0, mean - hw), upper: mean + hw, extrap, event });
   }
 
   const perProduct = series.map(({ p, s }) => {
