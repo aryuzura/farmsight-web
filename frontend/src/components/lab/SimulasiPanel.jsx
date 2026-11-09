@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Bar,
   CartesianGrid,
@@ -47,6 +47,136 @@ function GroupTitle({ title, caption, tone }) {
 
 const buktiTone = (b) => (b === 'cukup' || b === 'kuat' ? 'green' : b === 'lemah' ? 'amber' : 'gray');
 const versiLabel = (v) => (v === 'event' ? 'Sadar event' : v === 'buta' ? 'Buta event' : v === 'sarimax' ? 'SARIMAX' : v ?? '-');
+
+// Input persen perubahan harga per produk. Kosong = ikut slider global.
+function PriceCell({ value, placeholder, onCommit }) {
+  const [txt, setTxt] = useState(value === undefined ? '' : String(value));
+  useEffect(() => {
+    setTxt(value === undefined ? '' : String(value));
+  }, [value]);
+  return (
+    <div className="inline-flex items-center gap-1">
+      <input
+        type="text"
+        inputMode="numeric"
+        value={txt}
+        placeholder={String(placeholder)}
+        aria-label="Ubah harga produk dalam persen"
+        onChange={(e) => {
+          const v = e.target.value.trim();
+          if (!/^-?\d{0,3}$/.test(v)) return;
+          setTxt(v);
+          if (v === '') onCommit(undefined);
+          else if (v !== '-') onCommit(Math.min(200, Math.max(-90, Number(v))));
+        }}
+        className={`w-16 rounded-lg border px-2 py-1 text-right text-sm tabular-nums focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20 ${value === undefined ? 'border-gray-200 text-gray-500' : 'border-teal-400 bg-teal-50 text-gray-900'}`}
+      />
+      <span className="text-xs text-gray-400">%</span>
+    </div>
+  );
+}
+
+// Harga jual per produk: sebelum vs sesudah perubahan, beserta dampaknya ke volume dan pendapatan.
+function PriceTable({ nm, sc, params, setParams }) {
+  const rows = sc.perProduct.map((p, i) => {
+    const n = nm.perProduct[i];
+    return {
+      ...p,
+      n,
+      dVol: n.demand > 0 ? p.demand / n.demand - 1 : 0,
+      dRev: p.revenue - n.revenue,
+      dRevPct: n.revenue > 0 ? p.revenue / n.revenue - 1 : 0,
+    };
+  });
+  const nChanged = rows.filter((r) => Math.abs(r.pricePct) > 1e-9).length;
+  const nCustom = Object.keys(params.priceByProduct ?? {}).length;
+  const baseVol = rows.reduce((a, r) => a + r.n.demand * r.basePrice, 0);
+  const avgPct = baseVol > 0 ? rows.reduce((a, r) => a + r.n.demand * r.basePrice * (r.pricePct / 100), 0) / baseVol : 0;
+  const up = rows.filter((r) => r.dRev > 1).length;
+  const down = rows.filter((r) => r.dRev < -1).length;
+
+  const setOne = (kode) => (v) =>
+    setParams((p) => {
+      const next = { ...(p.priceByProduct ?? {}) };
+      if (v === undefined) delete next[kode];
+      else next[kode] = v;
+      return { ...p, priceByProduct: next };
+    });
+  const clearAll = () => setParams((p) => ({ ...p, priceByProduct: {} }));
+
+  return (
+    <div className={`${CARD} overflow-x-auto`}>
+      <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="font-semibold text-gray-900">Harga per produk setelah perubahan</h3>
+        {nCustom > 0 && (
+          <button type="button" onClick={clearAll} className="rounded-full border border-gray-300 bg-white px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100">
+            Hapus {nCustom} harga khusus
+          </button>
+        )}
+      </div>
+      <p className="mb-3 text-sm text-gray-500">
+        Ubah harga satu produk lewat kolom "Ubah harga". Kolom yang dikosongkan ikut slider "Ubah harga jual" ({sigPct(params.pricePct)}).
+      </p>
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Stat label="Produk berubah harga" value={`${nChanged} / ${rows.length}`} sub={nCustom > 0 ? `${nCustom} diatur khusus` : 'ikut perubahan global'} tone={nChanged > 0 ? 'teal' : 'default'} />
+        <Stat label="Rata-rata perubahan harga" value={fmtSigned(avgPct * 100, (x) => `${fmtNum(x, 1)}%`)} sub="tertimbang pendapatan normal" />
+        <Stat label="Pendapatan naik" value={`${up} produk`} tone={up > 0 ? 'green' : 'default'} />
+        <Stat label="Pendapatan turun" value={`${down} produk`} tone={down > 0 ? 'rose' : 'default'} />
+      </div>
+      <div className="overflow-y-auto" style={tableScrollStyle}>
+        <table className="w-full min-w-[820px] text-sm">
+          <thead>
+            <tr className="text-left text-xs uppercase tracking-wide text-gray-500" style={headRowStyle}>
+              <th className={`pr-3 ${stickyHead}`}>Produk</th>
+              <th className={`pr-3 text-right ${stickyHead}`}>Harga normal</th>
+              <th className={`pr-3 text-right ${stickyHead}`}>Ubah harga</th>
+              <th className={`pr-3 text-right ${stickyHead}`}>Harga simulasi</th>
+              <th className={`pr-3 text-right ${stickyHead}`}>Permintaan (unit)</th>
+              <th className={`pr-3 text-right ${stickyHead}`}>Pendapatan normal - simulasi</th>
+              <th className={`text-right ${stickyHead}`}>Selisih</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => {
+              const custom = params.priceByProduct?.[r.kode];
+              return (
+                <tr key={r.kode} className="border-b border-gray-100" style={bodyRowStyle}>
+                  <td className="pr-3 text-gray-700">{r.nama}</td>
+                  <td className="pr-3 text-right tabular-nums text-gray-600">{fmtRp(r.basePrice)}</td>
+                  <td className="pr-3 text-right">
+                    <PriceCell value={custom} placeholder={params.pricePct} onCommit={setOne(r.kode)} />
+                  </td>
+                  <td className="pr-3 text-right tabular-nums font-medium">
+                    {fmtRp(r.price)}
+                    <span className={`block text-xs ${r.pricePct > 0 ? 'text-amber-700' : r.pricePct < 0 ? 'text-teal-700' : 'text-gray-400'}`}>
+                      {fmtSigned(r.price - r.basePrice, fmtRp)} ({fmtSigned(r.pricePct, (x) => `${fmtNum(x, 0)}%`)})
+                    </span>
+                  </td>
+                  <td className="pr-3 text-right tabular-nums">
+                    {fmtNum(r.n.demand, 1)} - {fmtNum(r.demand, 1)}
+                    <span className={`block text-xs ${Math.abs(r.dVol) < 1e-4 ? 'text-gray-400' : r.dVol < 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
+                      {fmtSigned(r.dVol * 100, (x) => `${fmtNum(x, 1)}%`)}
+                    </span>
+                  </td>
+                  <td className="pr-3 text-right tabular-nums">
+                    {fmtRpCompact(r.n.revenue)} - {fmtRpCompact(r.revenue)}
+                  </td>
+                  <td className={`text-right tabular-nums font-medium ${r.dRev < -1 ? 'text-rose-700' : r.dRev > 1 ? 'text-emerald-700' : 'text-gray-500'}`}>
+                    {fmtSigned(r.dRev, fmtRpCompact)}
+                    <span className="block text-xs font-normal">{fmtSigned(r.dRevPct * 100, (x) => `${fmtNum(x, 1)}%`)}</span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-3 text-xs text-gray-500">
+        Volume berubah mengikuti sensitivitas harga (permintaan x (1 + perubahan harga) pangkat minus sensitivitas), lalu dikurangi bila stok tidak cukup. Produk yang peka terhadap harga bisa kehilangan pendapatan walau harganya naik.
+      </p>
+    </div>
+  );
+}
 
 // Dasar data skenario bazar: rasio lonjakan, kebutuhan 4 minggu, SS/ROP event, dan validasi uji.
 function BazaarDataCard({ summary }) {
@@ -119,8 +249,9 @@ export default function SimulasiPanel({ selected, horizon, conf, target, params,
   const { normal: nm, scenario: sc } = sim;
 
   const SKIP_CHANGED = ['bazaarUpliftPct', 'bazaarScalePct', 'miniStrengthPct', 'useEventPolicy'];
-  const changed = Object.keys(DEFAULT_PARAMS).some(
-    (k) => !SKIP_CHANGED.includes(k) && params[k] !== DEFAULT_PARAMS[k],
+  const customPrices = Object.keys(params.priceByProduct ?? {}).length;
+  const changed = customPrices > 0 || Object.keys(DEFAULT_PARAMS).some(
+    (k) => !SKIP_CHANGED.includes(k) && k !== 'priceByProduct' && params[k] !== DEFAULT_PARAMS[k],
   );
   const bzSummary = useMemo(() => bazaarSummary(selected), [selected]);
   const hasBz = bzSummary.n > 0;
@@ -195,6 +326,12 @@ export default function SimulasiPanel({ selected, horizon, conf, target, params,
         ? `Kenaikan harga ${params.pricePct}% menurunkan volume ${fmtPct(1 - sc.demand / Math.max(nm.demand, 1e-9), 0)}; pendapatan ${dRev >= 0 ? 'masih naik' : 'ikut turun'}. Sesuaikan sensitivitas harga bila perlu.`
         : `Penurunan harga ${Math.abs(params.pricePct)}% menaikkan volume ${fmtPct(sc.demand / Math.max(nm.demand, 1e-9) - 1, 0)}; pastikan stok cukup.`);
     }
+    if (customPrices > 0) {
+      const worst = [...sc.perProduct.map((p, i) => ({ nama: p.nama, d: p.revenue - nm.perProduct[i].revenue, pct: p.pricePct }))]
+        .filter((x) => Math.abs(x.pct) > 0)
+        .sort((a, b) => a.d - b.d)[0];
+      bullets.push(`${customPrices} produk memakai perubahan harga khusus${worst && worst.d < -1 ? `; paling merugi: ${worst.nama} (${fmtSigned(worst.d, fmtRpCompact)})` : ''}. Lihat tabel "Harga per produk setelah perubahan".`);
+    }
     if (params.ssBoostPct > 0) {
       recs.push(`Tambahan safety stock ${params.ssBoostPct}% memperbaiki fill rate ${fmtSigned(dFill * 100, (x) => `${fmtNum(x, 1)} poin`)} terhadap kondisi normal, dengan biaya stok lebih besar (rata-rata stok ${fmtNum(sc.avgStock, 1)} unit).`);
     }
@@ -253,7 +390,7 @@ export default function SimulasiPanel({ selected, horizon, conf, target, params,
         <div className="grid gap-8 lg:grid-cols-2">
           <div className="space-y-5">
             <GroupTitle title="Keputusan operasional" caption="Hal yang bisa Anda putuskan" tone="teal" />
-            <Slider label="Ubah harga jual" value={params.pricePct} onChange={set('pricePct')} min={-30} max={50} step={1} format={sigPct} hint="Harga naik menurunkan volume sesuai sensitivitas harga." />
+            <Slider label="Ubah harga jual" value={params.pricePct} onChange={set('pricePct')} min={-30} max={50} step={1} format={sigPct} hint={'Berlaku ke semua produk. Harga per produk bisa diatur terpisah di tabel "Harga per produk" di bawah.'} />
             <Slider label="Sensitivitas permintaan terhadap harga" value={params.elasticity} onChange={set('elasticity')} min={0} max={3} step={0.1} format={(v) => fmtNum(v, 1)} minLabel="0 (tidak peka)" maxLabel="3 (sangat peka)" />
             <div className="space-y-4 rounded-xl border border-teal-100 bg-teal-50/40 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -411,6 +548,8 @@ export default function SimulasiPanel({ selected, horizon, conf, target, params,
         </table>
         </div>
       </div>
+
+      <PriceTable nm={nm} sc={sc} params={params} setParams={setParams} />
 
       <div className={`${CARD} overflow-x-auto`}>
         <h3 className="mb-3 font-semibold text-gray-900">Dampak per produk (terdampak terparah di atas)</h3>

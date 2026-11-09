@@ -1,12 +1,3 @@
-// Mesin hitung Laboratorium Prediksi. Murni (tanpa React) agar mudah dites.
-//
-// Catatan metode:
-// - Prediksi tengah berasal dari forecast_kedepan.csv (model terbaik per produk, 4 minggu).
-// - Minggu setelah horizon model diperpanjang dengan level rata-rata prediksi model.
-// - Interval keyakinan: tengah +/- z * sigma, sigma = sigma_dipakai (residual test) dari
-//   safety_stock_rop.csv. Di luar horizon model, sigma dilebarkan 10% per minggu.
-// - Antarproduk dianggap independen (varians dijumlahkan).
-
 export const MODEL_WEEKS_FALLBACK = 4;
 export const WIDEN_PER_WEEK = 0.1;
 export const SERVICE_Z = 1.645; // service level 95%, sama dengan pipeline safety stock.
@@ -338,7 +329,8 @@ export function buildForecast(products, horizon, confPct, target = 'demand', ev 
 
 export const DEFAULT_PARAMS = {
   demandPct: 0,        // lonjakan/penurunan permintaan eksternal (%)
-  pricePct: 0,         // keputusan: ubah harga (%)
+  pricePct: 0,         // keputusan: ubah harga untuk semua produk (%)
+  priceByProduct: {},  // keputusan: ubah harga per produk (%), menimpa pricePct. Kunci = kode produk
   elasticity: 1,       // sensitivitas permintaan terhadap harga
   bazaarWeeks: 0,      // keputusan: tambahan minggu bazaar
   bazaarUpliftPct: 0,  // cadangan (produk tanpa data skenario), diisi dari data historis
@@ -422,9 +414,12 @@ function eventPlan(p, horizon, prm, fallbackUplift) {
 function scenarioForProduct(p, horizon, params, bzUplift, isScenario) {
   const series = productForecastSeries(p, horizon);
   const prm = isScenario ? params : DEFAULT_PARAMS;
-  const demandMult = (1 + prm.demandPct / 100) * Math.pow(Math.max(0.01, 1 + prm.pricePct / 100), -prm.elasticity);
+  // Perubahan harga: override per produk bila ada, kalau tidak ikut perubahan global.
+  const override = prm.priceByProduct?.[p.kode];
+  const pricePct = Number.isFinite(override) ? override : prm.pricePct;
+  const demandMult = (1 + prm.demandPct / 100) * Math.pow(Math.max(0.01, 1 + pricePct / 100), -prm.elasticity);
   const plan = eventPlan(p, horizon, prm, bzUplift);
-  const price = p.harga * (1 + prm.pricePct / 100);
+  const price = p.harga * (1 + pricePct / 100);
 
   const demand = series.map((s, i) => s.mean * demandMult * plan.factors[i]);
 
@@ -469,6 +464,8 @@ function scenarioForProduct(p, horizon, params, bzUplift, isScenario) {
     rop: ropNew,
     leadWeeks,
     price,
+    basePrice: p.harga,
+    pricePct,
   };
 }
 
@@ -516,6 +513,10 @@ function summarize(perProduct, horizon) {
         demand: d,
         sold: s,
         revenue: sum(pp.rows.map((r) => r.revenue)),
+        lostRevenue: sum(pp.rows.map((r) => r.lostRev)),
+        price: pp.price,
+        basePrice: pp.basePrice,
+        pricePct: pp.pricePct,
         fillRate: d > 0 ? s / d : 1,
         safetyStock: pp.safetyStock,
         rop: pp.rop,

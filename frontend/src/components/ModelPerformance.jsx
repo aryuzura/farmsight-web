@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { fetchApi } from '../api';
 
@@ -53,6 +52,8 @@ const ModelPerfomance = () => {
             nama_produk: item.nama_produk ?? item.nama ?? '-',
             model_terbaik: item.model_terbaik ?? item.model ?? null,
             RMSE: normalizeNumber(item.RMSE ?? item.rmse),
+            MAE: normalizeNumber(item.MAE ?? item.mae),
+            MASE: normalizeNumber(item.MASE ?? item.mase),
             Safety_Stock: normalizeNumber(
               item.Safety_Stock ?? item.safety_stock
             ),
@@ -506,14 +507,16 @@ const ModelPerfomance = () => {
           />
         </div>
 
-        <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <div className="max-h-96 overflow-auto rounded-lg border border-gray-200">
           <table className="min-w-full text-left text-sm text-gray-600">
-            <thead className="bg-gray-50 text-xs uppercase text-gray-700">
+            <thead className="sticky top-0 z-10 bg-gray-50 text-xs uppercase text-gray-700 shadow-sm">
               <tr>
                 <th className="whitespace-nowrap px-5 py-3">Kode</th>
                 <th className="whitespace-nowrap px-5 py-3">Nama Produk</th>
                 <th className="whitespace-nowrap px-5 py-3">Model Terbaik</th>
                 <th className="whitespace-nowrap px-5 py-3 text-right">RMSE</th>
+                <th className="whitespace-nowrap px-5 py-3 text-right">MAE</th>
+                <th className="whitespace-nowrap px-5 py-3 text-right">MASE</th>
                 <th className="whitespace-nowrap px-5 py-3 text-right">
                   Safety Stock
                 </th>
@@ -553,6 +556,14 @@ const ModelPerfomance = () => {
                   </td>
 
                   <td className="px-5 py-4 text-right">
+                    {formatMetric(item.MAE)}
+                  </td>
+
+                  <td className="px-5 py-4 text-right">
+                    {formatMetric(item.MASE)}
+                  </td>
+
+                  <td className="px-5 py-4 text-right">
                     {formatMetric(item.Safety_Stock)}
                   </td>
 
@@ -585,7 +596,7 @@ const ModelPerfomance = () => {
               {filteredModels.length === 0 && (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={9}
                     className="px-5 py-8 text-center text-gray-500"
                   >
                     Tidak ada data yang sesuai dengan pencarian.
